@@ -1,5 +1,5 @@
 {
-    "name": "@lumina/api-gateway",
+    "name": "@lumina/auth-service",
     "version": "0.0.1",
     "private": true,
     "nx": {
@@ -11,7 +11,7 @@
                     "args": [
                         "--node-env=production"
                     ],
-                    "cwd": "apps/api-gateway"
+                    "cwd": "apps/auth-service"
                 },
                 "configurations": {
                     "development": {
@@ -28,8 +28,8 @@
                 "cache": true,
                 "executor": "@nx/js:prune-lockfile",
                 "outputs": [
-                    "{workspaceRoot}/apps/api-gateway/dist/package.json",
-                    "{workspaceRoot}/apps/api-gateway/dist/package-lock.json"
+                    "{workspaceRoot}/apps/auth-service/dist/package.json",
+                    "{workspaceRoot}/apps/auth-service/dist/package-lock.json"
                 ],
                 "options": {
                     "buildTarget": "build"
@@ -41,7 +41,7 @@
                 ],
                 "cache": true,
                 "outputs": [
-                    "{workspaceRoot}/apps/api-gateway/dist/workspace_modules"
+                    "{workspaceRoot}/apps/auth-service/dist/workspace_modules"
                 ],
                 "executor": "@nx/js:copy-workspace-modules",
                 "options": {
@@ -63,15 +63,15 @@
                     "build"
                 ],
                 "options": {
-                    "buildTarget": "@lumina/api-gateway:build",
+                    "buildTarget": "@lumina/auth-service:build",
                     "runBuildTargetDependencies": false
                 },
                 "configurations": {
                     "development": {
-                        "buildTarget": "@lumina/api-gateway:build:development"
+                        "buildTarget": "@lumina/auth-service:build:development"
                     },
                     "production": {
-                        "buildTarget": "@lumina/api-gateway:build:production"
+                        "buildTarget": "@lumina/auth-service:build:production"
                     }
                 }
             },
