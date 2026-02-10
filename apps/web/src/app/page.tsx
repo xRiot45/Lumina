@@ -1,443 +1,654 @@
-export default function Index() {
-    /*
-     * Replace the elements below with your own.
-     *
-     * Note: The corresponding styles are in the ./index.tailwind file.
-     */
+'use client';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { motion } from 'framer-motion';
+import {
+    ArrowRight,
+    Bell,
+    Box,
+    Check,
+    Command,
+    ExternalLink,
+    Facebook,
+    Filter,
+    Heart,
+    Instagram,
+    Layers,
+    LayoutGrid,
+    Moon,
+    MousePointer2,
+    Search,
+    ShieldCheck,
+    ShoppingBag,
+    Sparkles,
+    Star,
+    Sun,
+    Truck,
+    Twitter,
+    Zap,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+// --- MOCK DATA ENHANCED (24 PRODUCTS) ---
+const CATEGORIES = [
+    { name: 'Outerwear', icon: <Layers size={14} /> },
+    { name: 'Footwear', icon: <Box size={14} /> },
+    { name: 'Hardware', icon: <Command size={14} /> },
+    { name: 'Accessories', icon: <Sparkles size={14} /> },
+    { name: 'Archive', icon: <Layers size={14} /> },
+];
+
+const PRODUCTS = Array.from({ length: 24 }).map((_, i) => ({
+    id: i + 1,
+    name: [
+        'Lumina Industrial Cargo v2',
+        'Aero-Tech Sneakers White',
+        'Holo-Shell Windbreaker',
+        'Vertex Smart Glasses',
+        'Quantum Mechanical Keyboard',
+        'Pulse-Line Joggers',
+        'Arc-Reactor Powerbank',
+        'Synth-Wave Cap',
+    ][i % 8],
+    price: `Rp ${(Math.floor(Math.random() * 20) + 5) * 50}000`,
+    category: ['Apparel', 'Footwear', 'Hardware', 'Accessories'][i % 4],
+    rating: (4.5 + Math.random() * 0.5).toFixed(1),
+    reviews: Math.floor(Math.random() * 500),
+    description:
+        'High-performance modular gear built with reinforced synthetic fibers and weather-resistant coating. Optimized for urban mobility and high-density environments.',
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    features: ['Water-repellent', 'Modular Design', 'Reinforced Stitching'],
+    isNew: i < 6,
+    discount: i % 5 === 0 ? '20%' : null,
+    stock: Math.floor(Math.random() * 50),
+}));
+
+const REVIEWS = [
+    { user: 'Alex_V', comment: 'Quality is insane. Best techwear in the market.', rating: 5 },
+    { user: 'Sarah_K', comment: 'The smart glasses are a game changer for my workflow.', rating: 5 },
+    { user: 'Zero_Dev', comment: 'Sharp design, fits perfectly with my industrial setup.', rating: 4 },
+];
+
+export default function UltimateIndustrialEcom() {
+    const [isDark, setIsDark] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
+    if (!mounted) return null;
+
     return (
-        <div>
-            <div className="wrapper">
-                <div className="container">
-                    <div id="welcome">
-                        <h1>
-                            <span> Hello there, </span>
-                            Welcome web 👋
-                        </h1>
-                    </div>
-
-                    <div id="hero" className="rounded">
-                        <div className="text-container">
-                            <h2>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                                    />
-                                </svg>
-                                <span>You&apos;re up and running</span>
-                            </h2>
-                            <a href="#commands"> What&apos;s next? </a>
-                        </div>
-                        <div className="logo-container">
-                            <svg fill="currentColor" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11.987 14.138l-3.132 4.923-5.193-8.427-.012 8.822H0V4.544h3.691l5.247 8.833.005-3.998 3.044 4.759zm.601-5.761c.024-.048 0-3.784.008-3.833h-3.65c.002.059-.005 3.776-.003 3.833h3.645zm5.634 4.134a2.061 2.061 0 0 0-1.969 1.336 1.963 1.963 0 0 1 2.343-.739c.396.161.917.422 1.33.283a2.1 2.1 0 0 0-1.704-.88zm3.39 1.061c-.375-.13-.8-.277-1.109-.681-.06-.08-.116-.17-.176-.265a2.143 2.143 0 0 0-.533-.642c-.294-.216-.68-.322-1.18-.322a2.482 2.482 0 0 0-2.294 1.536 2.325 2.325 0 0 1 4.002.388.75.75 0 0 0 .836.334c.493-.105.46.36 1.203.518v-.133c-.003-.446-.246-.55-.75-.733zm2.024 1.266a.723.723 0 0 0 .347-.638c-.01-2.957-2.41-5.487-5.37-5.487a5.364 5.364 0 0 0-4.487 2.418c-.01-.026-1.522-2.39-1.538-2.418H8.943l3.463 5.423-3.379 5.32h3.54l1.54-2.366 1.568 2.366h3.541l-3.21-5.052a.7.7 0 0 1-.084-.32 2.69 2.69 0 0 1 2.69-2.691h.001c1.488 0 1.736.89 2.057 1.308.634.826 1.9.464 1.9 1.541a.707.707 0 0 0 1.066.596zm.35.133c-.173.372-.56.338-.755.639-.176.271.114.412.114.412s.337.156.538-.311c.104-.231.14-.488.103-.74z" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    <div id="middle-content">
-                        <div id="learning-materials" className="rounded shadow">
-                            <h2>Learning materials</h2>
-                            <a
-                                href="https://nx.dev/getting-started/intro?utm_source=nx-project"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="list-item-link"
-                            >
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                                    />
-                                </svg>
-                                <span>
-                                    Documentation
-                                    <span> Everything is in there </span>
-                                </span>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://nx.dev/blog/?utm_source=nx-project"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="list-item-link"
-                            >
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                                    />
-                                </svg>
-                                <span>
-                                    Blog
-                                    <span> Changelog, features & events </span>
-                                </span>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://www.youtube.com/@NxDevtools/videos?utm_source=nx-project&sub_confirmation=1"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="list-item-link"
-                            >
-                                <svg
-                                    role="img"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <title>YouTube</title>
-                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                                </svg>
-                                <span>
-                                    YouTube channel
-                                    <span> Nx Show, talks & tutorials </span>
-                                </span>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://nx.dev/react-tutorial/1-code-generation?utm_source=nx-project"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="list-item-link"
-                            >
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
-                                    />
-                                </svg>
-                                <span>
-                                    Interactive tutorials
-                                    <span> Create an app, step-by-step </span>
-                                </span>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://nxplaybook.com/?utm_source=nx-project"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="list-item-link"
-                            >
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                                    />
-                                </svg>
-                                <span>
-                                    Video courses
-                                    <span> Nx custom courses </span>
-                                </span>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
-                            </a>
-                        </div>
-                        <div id="other-links">
-                            <a
-                                id="nx-console"
-                                className="button-pill rounded shadow"
-                                href="https://marketplace.visualstudio.com/items?itemName=nrwl.angular-console&utm_source=nx-project"
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                <svg
-                                    fill="currentColor"
-                                    role="img"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <title>Visual Studio Code</title>
-                                    <path d="M23.15 2.587L18.21.21a1.494 1.494 0 0 0-1.705.29l-9.46 8.63-4.12-3.128a.999.999 0 0 0-1.276.057L.327 7.261A1 1 0 0 0 .326 8.74L3.899 12 .326 15.26a1 1 0 0 0 .001 1.479L1.65 17.94a.999.999 0 0 0 1.276.057l4.12-3.128 9.46 8.63a1.492 1.492 0 0 0 1.704.29l4.942-2.377A1.5 1.5 0 0 0 24 20.06V3.939a1.5 1.5 0 0 0-.85-1.352zm-5.146 14.861L10.826 12l7.178-5.448v10.896z" />
-                                </svg>
-                                <span>
-                                    Install Nx Console for VSCode
-                                    <span>The official VSCode extension for Nx.</span>
-                                </span>
-                            </a>
-                            <a
-                                id="nx-console-jetbrains"
-                                className="button-pill rounded shadow"
-                                href="https://plugins.jetbrains.com/plugin/21060-nx-console"
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                <svg height="48" width="48" viewBox="20 20 60 60" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="m22.5 22.5h60v60h-60z" />
-                                    <g fill="#fff">
-                                        <path d="m29.03 71.25h22.5v3.75h-22.5z" />
-                                        <path d="m28.09 38 1.67-1.58a1.88 1.88 0 0 0 1.47.87c.64 0 1.06-.44 1.06-1.31v-5.98h2.58v6a3.48 3.48 0 0 1 -.87 2.6 3.56 3.56 0 0 1 -2.57.95 3.84 3.84 0 0 1 -3.34-1.55z" />
-                                        <path d="m36 30h7.53v2.19h-5v1.44h4.49v2h-4.42v1.49h5v2.21h-7.6z" />
-                                        <path d="m47.23 32.29h-2.8v-2.29h8.21v2.27h-2.81v7.1h-2.6z" />
-                                        <path d="m29.13 43.08h4.42a3.53 3.53 0 0 1 2.55.83 2.09 2.09 0 0 1 .6 1.53 2.16 2.16 0 0 1 -1.44 2.09 2.27 2.27 0 0 1 1.86 2.29c0 1.61-1.31 2.59-3.55 2.59h-4.44zm5 2.89c0-.52-.42-.8-1.18-.8h-1.29v1.64h1.24c.79 0 1.25-.26 1.25-.81zm-.9 2.66h-1.57v1.73h1.62c.8 0 1.24-.31 1.24-.86 0-.5-.4-.87-1.27-.87z" />
-                                        <path d="m38 43.08h4.1a4.19 4.19 0 0 1 3 1 2.93 2.93 0 0 1 .9 2.19 3 3 0 0 1 -1.93 2.89l2.24 3.27h-3l-1.88-2.84h-.87v2.84h-2.56zm4 4.5c.87 0 1.39-.43 1.39-1.11 0-.75-.54-1.12-1.4-1.12h-1.44v2.26z" />
-                                        <path d="m49.59 43h2.5l4 9.44h-2.79l-.67-1.69h-3.63l-.67 1.69h-2.71zm2.27 5.73-1-2.65-1.06 2.65z" />
-                                        <path d="m56.46 43.05h2.6v9.37h-2.6z" />
-                                        <path d="m60.06 43.05h2.42l3.37 5v-5h2.57v9.37h-2.26l-3.53-5.14v5.14h-2.57z" />
-                                        <path d="m68.86 51 1.45-1.73a4.84 4.84 0 0 0 3 1.13c.71 0 1.08-.24 1.08-.65 0-.4-.31-.6-1.59-.91-2-.46-3.53-1-3.53-2.93 0-1.74 1.37-3 3.62-3a5.89 5.89 0 0 1 3.86 1.25l-1.26 1.84a4.63 4.63 0 0 0 -2.62-.92c-.63 0-.94.25-.94.6 0 .42.32.61 1.63.91 2.14.46 3.44 1.16 3.44 2.91 0 1.91-1.51 3-3.79 3a6.58 6.58 0 0 1 -4.35-1.5z" />
-                                    </g>
-                                </svg>
-                                <span>
-                                    Install Nx Console for JetBrains
-                                    <span>Available for WebStorm, Intellij IDEA Ultimate and more!</span>
-                                </span>
-                            </a>
-                            <div id="nx-cloud" className="rounded shadow">
-                                <div>
-                                    <svg
-                                        id="nx-cloud-logo"
-                                        role="img"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        stroke="currentColor"
-                                        fill="transparent"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeWidth="2"
-                                            d="M23 3.75V6.5c-3.036 0-5.5 2.464-5.5 5.5s-2.464 5.5-5.5 5.5-5.5 2.464-5.5 5.5H3.75C2.232 23 1 21.768 1 20.25V3.75C1 2.232 2.232 1 3.75 1h16.5C21.768 1 23 2.232 23 3.75Z"
-                                        />
-                                        <path
-                                            strokeWidth="2"
-                                            d="M23 6v14.1667C23 21.7307 21.7307 23 20.1667 23H6c0-3.128 2.53867-5.6667 5.6667-5.6667 3.128 0 5.6666-2.5386 5.6666-5.6666C17.3333 8.53867 19.872 6 23 6Z"
-                                        />
-                                    </svg>
-                                    <h2>
-                                        Nx Cloud
-                                        <span>Enable faster CI & better DX</span>
-                                    </h2>
-                                </div>
-                                <p>You can activate distributed tasks executions and caching by running:</p>
-                                <pre>nx connect</pre>
-                                <a href="https://nx.app/?utm_source=nx-project" target="_blank" rel="noreferrer">
-                                    {' '}
-                                    What is Nx Cloud?{' '}
-                                </a>
-                            </div>
-                            <a
-                                id="nx-repo"
-                                className="button-pill rounded shadow"
-                                href="https://github.com/nrwl/nx?utm_source=nx-project"
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                <svg
-                                    fill="currentColor"
-                                    role="img"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-                                </svg>
-                                <span>
-                                    Nx is open source
-                                    <span> Love Nx? Give us a star! </span>
-                                </span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div id="commands" className="rounded shadow">
-                        <h2>Next steps</h2>
-                        <p>Here are some things you can do with Nx:</p>
-                        <details>
-                            <summary>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    />
-                                </svg>
-                                Add UI library
-                            </summary>
-                            <pre>
-                                <span># Generate UI lib</span>
-                                nx g @nx/next:library ui
-                                <span># Add a component</span>
-                                nx g @nx/next:component ui/src/lib/button
-                            </pre>
-                        </details>
-                        <details>
-                            <summary>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    />
-                                </svg>
-                                View project details
-                            </summary>
-                            <pre>nx show project web --web</pre>
-                        </details>
-                        <details>
-                            <summary>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    />
-                                </svg>
-                                View interactive project graph
-                            </summary>
-                            <pre>nx graph</pre>
-                        </details>
-                        <details>
-                            <summary>
-                                <svg
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    />
-                                </svg>
-                                Run affected commands
-                            </summary>
-                            <pre>
-                                <span># see what&apos;s been affected by changes</span>
-                                nx affected:graph
-                                <span># run tests for current changes</span>
-                                nx affected:test
-                                <span># run e2e tests for current changes</span>
-                                nx affected:e2e
-                            </pre>
-                        </details>
-                    </div>
-
-                    <p id="love">
-                        Carefully crafted with
-                        <svg fill="currentColor" stroke="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                            />
-                        </svg>
-                    </p>
-                </div>
+        <div
+            className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark bg-[#0a0a0a] text-slate-50' : 'bg-white text-slate-900'}`}
+        >
+            {/* --- TOP ANNOUNCEMENT --- */}
+            <div className="bg-sky-600 text-white py-2 px-4 overflow-hidden whitespace-nowrap">
+                <motion.div
+                    animate={{ x: [0, -1000] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+                    className="text-[9px] font-bold uppercase tracking-[0.4em] flex gap-20"
+                >
+                    <span>NEW DROP: LUMINA X VORTEX COLLABORATION LIVE NOW</span>
+                    <span>FREE WORLDWIDE SHIPPING FOR CRYPTO PAYMENTS</span>
+                    <span>SYSTEM UPGRADE 2.0: NEW INVENTORY ADDED</span>
+                </motion.div>
             </div>
+
+            {/* --- NAVBAR --- */}
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur border-slate-200 dark:border-white/10">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-10">
+                        <div className="flex items-center gap-2 cursor-pointer">
+                            <div className="bg-sky-500 p-1.5 rounded-md">
+                                <ShoppingBag className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="font-bold text-lg tracking-tighter uppercase">
+                                Lumina<span className="text-sky-500 font-light">Lab</span>
+                            </span>
+                        </div>
+                        <nav className="hidden md:flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                            <a href="#" className="text-sky-500">
+                                Dashboard
+                            </a>
+                            <a href="#" className="hover:text-primary transition-colors">
+                                Catalog
+                            </a>
+                            <a href="#" className="hover:text-primary transition-colors">
+                                Collection
+                            </a>
+                            <a href="#" className="hover:text-primary transition-colors">
+                                System
+                            </a>
+                        </nav>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex items-center border border-slate-200 dark:border-white/10 rounded-md px-3 py-1 bg-slate-50 dark:bg-white/5">
+                            <Search className="w-3 h-3 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="CMD_SEARCH..."
+                                className="bg-transparent border-none outline-none text-[10px] font-mono ml-2 w-48 uppercase"
+                            />
+                        </div>
+                        <div className="flex items-center border-x border-slate-200 dark:border-white/10 px-4 gap-4">
+                            <Bell className="w-4 h-4 cursor-pointer text-slate-400 hover:text-sky-500" />
+                            <Heart className="w-4 h-4 cursor-pointer text-slate-400 hover:text-sky-500" />
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setIsDark(!isDark)} className="rounded-md">
+                            {isDark ? <Sun className="w-4 h-4 text-sky-400" /> : <Moon className="w-4 h-4" />}
+                        </Button>
+                        <Button className="h-9 rounded-md bg-sky-600 hover:bg-sky-700 font-bold text-[10px] uppercase tracking-widest px-6 shadow-lg shadow-sky-500/20">
+                            Login_Access
+                        </Button>
+                    </div>
+                </div>
+            </header>
+
+            <main className="container mx-auto max-w-7xl px-4 py-8">
+                {/* --- HERO BENTO GRID --- */}
+                <section className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-16">
+                    <div className="md:col-span-8 relative aspect-[16/9] md:aspect-auto md:h-[550px] bg-slate-900 rounded-md overflow-hidden border border-white/5 group">
+                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070')] bg-cover bg-center grayscale opacity-40 group-hover:scale-105 transition-transform duration-700"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+                        <div className="absolute bottom-12 left-12 z-10">
+                            <Badge className="rounded-md bg-sky-500 mb-4 border-none text-[9px]">
+                                ENCRYPTED_SHIPMENT_02
+                            </Badge>
+                            <h1 className="text-6xl font-black tracking-tighter mb-4 leading-none italic uppercase">
+                                Cyber <br /> Urban_Core
+                            </h1>
+                            <p className="text-slate-400 max-w-sm text-sm mb-8 leading-relaxed">
+                                Advanced apparel systems designed for the high-density urban environments. SS/26
+                                Available now.
+                            </p>
+                            <div className="flex gap-4">
+                                <Button className="rounded-md bg-white text-black hover:bg-slate-200 font-bold text-[10px] uppercase tracking-widest h-12 px-10">
+                                    Shop_Archive
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="rounded-md border-white/20 text-white h-12 px-10 text-[10px] uppercase tracking-widest hover:bg-white/5"
+                                >
+                                    Lookbook
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="md:col-span-4 grid grid-rows-2 gap-4">
+                        <div className="bg-sky-600 rounded-md p-8 flex flex-col justify-between relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-20 rotate-12">
+                                <Zap size={120} />
+                            </div>
+                            <Badge className="w-fit rounded-sm bg-white/20 text-white border-none text-[8px]">
+                                ACTIVE_PROMO
+                            </Badge>
+                            <div>
+                                <h3 className="text-white font-black text-2xl mb-1 tracking-tighter italic">
+                                    FLASH_DROP
+                                </h3>
+                                <p className="text-sky-100 text-xs mb-6 opacity-80 uppercase tracking-widest">
+                                    Selected Hardware 40% Off
+                                </p>
+                                <div className="flex gap-2 mb-6">
+                                    <div className="bg-white/10 px-3 py-2 rounded-md font-mono text-white text-lg">
+                                        02
+                                    </div>
+                                    <div className="bg-white/10 px-3 py-2 rounded-md font-mono text-white text-lg">
+                                        45
+                                    </div>
+                                    <div className="bg-white/10 px-3 py-2 rounded-md font-mono text-white text-lg">
+                                        12
+                                    </div>
+                                </div>
+                                <Button className="w-full rounded-md bg-black text-white hover:bg-black/80 font-bold text-[10px] uppercase tracking-widest h-10">
+                                    Enter_Terminal
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-md p-8 flex flex-col justify-center">
+                            <h3 className="font-bold text-xl mb-2 tracking-tighter">COLLECTIVE_SUBS</h3>
+                            <p className="text-slate-500 text-xs mb-6 uppercase leading-tight">
+                                Join the internal network for early drop notifications and NFT drops.
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    className="flex-1 bg-transparent border-b border-slate-300 dark:border-white/20 text-xs outline-none focus:border-sky-500 py-2 font-mono"
+                                    placeholder="USER@DOMAIN.COM"
+                                />
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="rounded-md h-10 w-10 border border-slate-200 dark:border-white/10"
+                                >
+                                    <ArrowRight size={16} />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- STATS BAR --- */}
+                <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16 py-8 border-y border-slate-200 dark:border-white/5">
+                    <div className="text-center">
+                        <div className="text-2xl font-black text-sky-500">12.5K+</div>
+                        <div className="text-[9px] font-bold uppercase tracking-widest opacity-50">Units_Deployed</div>
+                    </div>
+                    <div className="text-center border-l border-slate-200 dark:border-white/5">
+                        <div className="text-2xl font-black text-sky-500">4.9/5</div>
+                        <div className="text-[9px] font-bold uppercase tracking-widest opacity-50">User_Rating</div>
+                    </div>
+                    <div className="text-center border-l border-slate-200 dark:border-white/5">
+                        <div className="text-2xl font-black text-sky-500">24/7</div>
+                        <div className="text-[9px] font-bold uppercase tracking-widest opacity-50">Support_Active</div>
+                    </div>
+                    <div className="text-center border-l border-slate-200 dark:border-white/5">
+                        <div className="text-2xl font-black text-sky-500">100%</div>
+                        <div className="text-[9px] font-bold uppercase tracking-widest opacity-50">Encrypted_Sec</div>
+                    </div>
+                </section>
+
+                {/* --- CATEGORY QUICK SELECT --- */}
+                <section className="mb-12">
+                    <div className="flex items-center gap-4 overflow-x-auto pb-4 hide-scrollbar">
+                        {CATEGORIES.map((cat) => (
+                            <button key={cat.name} className="flex-none group">
+                                <div className="px-8 py-4 border border-slate-200 dark:border-white/10 rounded-md flex items-center gap-4 hover:border-sky-500 hover:bg-sky-500/5 transition-all">
+                                    <span className="text-sky-500">{cat.icon}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">{cat.name}</span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* --- MAIN CATALOG (24 PRODUCTS) --- */}
+                <section className="mb-24">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 border-l-4 border-sky-500 pl-6">
+                        <div>
+                            <h2 className="text-3xl font-black tracking-tighter uppercase italic">Main_Archive_2026</h2>
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                                Showing all results // Database_Version: 2.0.1
+                            </p>
+                        </div>
+                        <div className="flex gap-3 mt-4 md:mt-0">
+                            <Button
+                                variant="outline"
+                                className="rounded-md h-10 text-[10px] font-bold uppercase tracking-widest border-slate-200 dark:border-white/10"
+                            >
+                                <Filter className="w-3 h-3 mr-2" /> Filter_Params
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="rounded-md h-10 text-[10px] font-bold uppercase tracking-widest border-slate-200 dark:border-white/10"
+                            >
+                                <LayoutGrid className="w-3 h-3 mr-2" /> Sort_By
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        {PRODUCTS.map((product) => (
+                            <Dialog key={product.id}>
+                                <DialogTrigger asChild>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        className="group cursor-pointer border border-slate-200 dark:border-white/10 rounded-md p-3 hover:border-sky-500/50 transition-all bg-white dark:bg-white/[0.02]"
+                                    >
+                                        <div className="aspect-[3/4] rounded-sm bg-slate-100 dark:bg-white/5 relative overflow-hidden mb-4">
+                                            {product.isNew && (
+                                                <Badge className="absolute top-2 left-2 rounded-sm text-[8px] bg-sky-600 border-none px-2 py-0.5">
+                                                    NEW
+                                                </Badge>
+                                            )}
+                                            {product.discount && (
+                                                <Badge className="absolute top-2 right-2 rounded-sm text-[8px] bg-red-600 border-none px-2 py-0.5">
+                                                    -{product.discount}
+                                                </Badge>
+                                            )}
+                                            <div className="absolute inset-0 bg-sky-500/0 group-hover:bg-sky-500/5 transition-colors flex items-center justify-center">
+                                                <MousePointer2
+                                                    className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                                                    size={24}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="px-1">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    {product.category}
+                                                </p>
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-2.5 h-2.5 fill-sky-500 text-sky-500" />
+                                                    <span className="text-[9px] font-bold">{product.rating}</span>
+                                                </div>
+                                            </div>
+                                            <h3 className="font-bold text-xs line-clamp-2 mb-3 uppercase tracking-tight group-hover:text-sky-500 transition-colors h-8">
+                                                {product.name}
+                                            </h3>
+                                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/5">
+                                                <span className="font-mono text-xs font-bold">{product.price}</span>
+                                                <span className="text-[9px] text-slate-500 font-mono">
+                                                    STOCK:{product.stock}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </DialogTrigger>
+
+                                <DialogContent className="sm:max-w-5xl p-0 overflow-hidden border-none rounded-md dark:bg-[#0d0d0d] outline-none">
+                                    <div className="grid grid-cols-1 md:grid-cols-2">
+                                        <div className="bg-slate-100 dark:bg-white/10 flex items-center justify-center p-10 relative">
+                                            <div className="w-full aspect-square border border-slate-200 dark:border-white/20 flex items-center justify-center relative overflow-hidden group">
+                                                <Zap className="w-24 h-24 text-sky-500/10 group-hover:scale-110 transition-transform" />
+                                                <div className="absolute top-4 left-4 text-[8px] font-mono opacity-30 tracking-[0.2em]">
+                                                    UID_{product.id} // SEC_VERIFIED
+                                                </div>
+                                                <div className="absolute bottom-4 right-4 text-[8px] font-mono opacity-30">
+                                                    © LUMINA_SYSTEMS
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="p-10 flex flex-col justify-between">
+                                            <div>
+                                                <DialogHeader className="mb-8">
+                                                    <div className="flex gap-2 mb-4">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="rounded-sm border-sky-500 text-sky-500 text-[9px] px-3"
+                                                        >
+                                                            AUTHORISED_DEALER
+                                                        </Badge>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="rounded-sm border-slate-500 text-slate-500 text-[9px] px-3"
+                                                        >
+                                                            {product.category}
+                                                        </Badge>
+                                                    </div>
+                                                    <DialogTitle className="text-4xl font-black uppercase tracking-tighter italic leading-none mb-2">
+                                                        {product.name}
+                                                    </DialogTitle>
+                                                    <div className="text-3xl font-mono text-sky-500 font-bold">
+                                                        {product.price}
+                                                    </div>
+                                                </DialogHeader>
+
+                                                <ScrollArea className="h-[280px] pr-6">
+                                                    <p className="text-[11px] text-slate-500 leading-relaxed uppercase tracking-wide mb-8">
+                                                        {product.description}
+                                                    </p>
+
+                                                    <div className="mb-8">
+                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-4 text-slate-400">
+                                                            Select_Configuration
+                                                        </h4>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {product.sizes.map((s) => (
+                                                                <button
+                                                                    key={s}
+                                                                    className="w-12 h-12 border border-slate-200 dark:border-white/10 rounded-md text-[10px] font-bold hover:border-sky-500 hover:text-sky-500 transition-all uppercase"
+                                                                >
+                                                                    {s}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-3 mb-8">
+                                                        {product.features.map((f, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-300"
+                                                            >
+                                                                <Check className="w-3 h-3 text-sky-500" /> {f}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3 pb-4">
+                                                        <div className="p-4 border border-slate-200 dark:border-white/10 rounded-md">
+                                                            <Truck className="w-5 h-5 mb-2 text-sky-500" />
+                                                            <p className="text-[9px] font-bold uppercase">
+                                                                Priority_Logistics
+                                                            </p>
+                                                            <p className="text-[8px] text-slate-500 mt-1 uppercase font-mono">
+                                                                ETA: 2-3_DAYS
+                                                            </p>
+                                                        </div>
+                                                        <div className="p-4 border border-slate-200 dark:border-white/10 rounded-md">
+                                                            <ShieldCheck className="w-5 h-5 mb-2 text-sky-500" />
+                                                            <p className="text-[9px] font-bold uppercase">
+                                                                Encrypted_Origin
+                                                            </p>
+                                                            <p className="text-[8px] text-slate-500 mt-1 uppercase font-mono">
+                                                                VERIFIED_NFT
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </ScrollArea>
+                                            </div>
+
+                                            <div className="mt-10 flex gap-3 pt-6 border-t dark:border-white/5">
+                                                <Button className="flex-1 rounded-md bg-sky-600 hover:bg-sky-700 font-black uppercase tracking-[0.2em] text-[11px] h-14 shadow-lg shadow-sky-500/20">
+                                                    Deploy_to_Cart
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="h-14 w-14 rounded-md border-slate-200 dark:border-white/10 hover:border-red-500 hover:text-red-500 transition-all"
+                                                >
+                                                    <Heart className="w-5 h-5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        ))}
+                    </div>
+
+                    <div className="mt-20 flex flex-col items-center">
+                        <p className="text-[10px] font-mono text-slate-500 mb-6 tracking-widest uppercase">
+                            End of primary archive // 24 items loaded
+                        </p>
+                        <Button
+                            variant="outline"
+                            className="rounded-md px-12 h-12 text-[10px] font-bold uppercase tracking-[0.3em] border-slate-200 dark:border-white/10 hover:border-sky-500"
+                        >
+                            Access_More_Data
+                        </Button>
+                    </div>
+                </section>
+
+                {/* --- REVIEW HUB --- */}
+                <section className="py-20 border-t border-slate-200 dark:border-white/10">
+                    <div className="text-center mb-16">
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-2">
+                            User_Feedback_Terminal
+                        </h2>
+                        <p className="text-[10px] font-mono text-sky-500 uppercase tracking-widest">
+                            Real-time transmissions from the field
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {REVIEWS.map((rev, i) => (
+                            <div
+                                key={i}
+                                className="p-8 border border-slate-200 dark:border-white/10 rounded-md bg-slate-50 dark:bg-white/[0.01]"
+                            >
+                                <div className="flex gap-1 mb-4 text-sky-500">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                        <Star key={s} size={12} fill={s <= rev.rating ? 'currentColor' : 'none'} />
+                                    ))}
+                                </div>
+                                <p className="text-xs uppercase font-medium leading-relaxed mb-6 italic">
+                                    "{rev.comment}"
+                                </p>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-[10px] font-bold">
+                                        U
+                                    </div>
+                                    <span className="text-[10px] font-mono font-bold">{rev.user}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* --- BRAND PARTNERS --- */}
+                <section className="py-20 border-t border-slate-200 dark:border-white/10 overflow-hidden">
+                    <div className="flex flex-wrap justify-center gap-10 md:gap-20 opacity-20 grayscale transition-all hover:opacity-100">
+                        <div className="font-black text-2xl italic tracking-tighter uppercase flex items-center gap-2">
+                            Phantom_Supply <ExternalLink size={14} />
+                        </div>
+                        <div className="font-black text-2xl italic tracking-tighter uppercase flex items-center gap-2">
+                            Vortex_Tech <ExternalLink size={14} />
+                        </div>
+                        <div className="font-black text-2xl italic tracking-tighter uppercase flex items-center gap-2">
+                            Neuro_Net <ExternalLink size={14} />
+                        </div>
+                        <div className="font-black text-2xl italic tracking-tighter uppercase flex items-center gap-2">
+                            Oxygen_Gear <ExternalLink size={14} />
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            {/* --- INDUSTRIAL FOOTER --- */}
+            <footer className="bg-slate-50 dark:bg-[#050505] border-t border-slate-200 dark:border-white/10 pt-20 pb-10">
+                <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-5 gap-12 mb-20">
+                    <div className="col-span-2">
+                        <div className="flex items-center gap-2 mb-8">
+                            <div className="bg-sky-500 p-1.5 rounded-md">
+                                <ShoppingBag className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="font-black text-xl tracking-tighter uppercase italic">
+                                Lumina<span className="text-sky-500 font-light">Lab</span>
+                            </span>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-loose uppercase tracking-wide max-w-sm">
+                            Propelling urban exploration through modular apparel and hardware integration. Designed for
+                            high-density environments and extreme metropolitan conditions.
+                        </p>
+                        <div className="flex gap-4 mt-8">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="rounded-md border-slate-200 dark:border-white/10 hover:text-sky-500 transition-colors"
+                            >
+                                <Instagram size={16} />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="rounded-md border-slate-200 dark:border-white/10 hover:text-sky-500 transition-colors"
+                            >
+                                <Twitter size={16} />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="rounded-md border-slate-200 dark:border-white/10 hover:text-sky-500 transition-colors"
+                            >
+                                <Facebook size={16} />
+                            </Button>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-8 text-sky-500">
+                            Navigation_Tree
+                        </h4>
+                        <ul className="space-y-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Master_Archive
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Catalog_List
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Internal_Drops
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Legacy_System
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-8 text-sky-500">
+                            Service_Node
+                        </h4>
+                        <ul className="space-y-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Shipment_Tracking
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Return_Protocol
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Cyber_Sec_Policy
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" className="hover:text-white transition-colors">
+                                    Terminal_Faq
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-8 text-sky-500">
+                            System_Status
+                        </h4>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                                <span className="text-[9px] font-mono text-slate-400">SERVER_ONLINE_100%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                <span className="text-[9px] font-mono text-slate-400">DB_SYNC_COMPLETE</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-sky-500 rounded-full"></div>
+                                <span className="text-[9px] font-mono text-slate-400">VER_2.0.1_STABLE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto px-4 pt-10 border-t border-slate-200 dark:border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex flex-col gap-1">
+                        <p className="text-[9px] font-mono text-slate-500 uppercase tracking-widest italic">
+                            © 2026 LUMINA_LAB_SYSTEMS. DESIGNED BY THOMAS_ALBERTO.
+                        </p>
+                        <p className="text-[8px] font-mono text-slate-600 uppercase tracking-widest">
+                            HOSTED_ON_DECENTRALIZED_NET // ENCRYPTED_SSL
+                        </p>
+                    </div>
+                    <div className="flex gap-10 text-[9px] font-mono text-slate-500 uppercase tracking-[0.2em]">
+                        <div className="flex flex-col">
+                            <span className="text-sky-500">LOC: PONTIANAK_ID</span>
+                            <span>LAT: -0.0263 // LON: 109.3425</span>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

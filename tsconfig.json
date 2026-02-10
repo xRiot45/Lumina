@@ -16,13 +16,7 @@
             "path": "./libs/shared/constants"
         },
         {
-            "path": "./libs/shared/types"
-        },
-        {
             "path": "./libs/shared/schemas"
-        },
-        {
-            "path": "./libs/shared/ui"
         }
     ]
 }
