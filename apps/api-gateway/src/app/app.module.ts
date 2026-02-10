@@ -14,6 +14,14 @@ import { AppService } from './app.service';
                     port: 3001,
                 },
             },
+            {
+                name: 'USERS_SERVICE',
+                transport: Transport.TCP,
+                options: {
+                    host: '0.0.0.0',
+                    port: 3002,
+                },
+            },
         ]),
     ],
     controllers: [AppController],
