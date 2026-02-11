@@ -35,6 +35,9 @@
         },
         {
             "path": "./libs/shared/logger"
+        },
+        {
+            "path": "./libs/shared/utils"
         }
     ]
 }
