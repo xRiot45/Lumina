@@ -23,6 +23,12 @@
         },
         {
             "path": "./apps/users-service"
+        },
+        {
+            "path": "./libs/shared/dto"
+        },
+        {
+            "path": "./libs/shared/entities"
         }
     ]
 }
