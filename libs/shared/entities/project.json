@@ -1,0 +1,14 @@
+{
+    "name": "shared-entities",
+    "projectType": "library",
+    "sourceRoot": "libs/shared/entities/src",
+    "targets": {
+        "lint": {
+            "executor": "@nx/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["libs/shared/entities/**/*.ts"]
+            }
+        }
+    }
+}

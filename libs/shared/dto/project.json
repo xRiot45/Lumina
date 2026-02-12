@@ -1,0 +1,14 @@
+{
+    "name": "shared-dto",
+    "projectType": "library",
+    "sourceRoot": "libs/shared/dto/src",
+    "targets": {
+        "lint": {
+            "executor": "@nx/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["libs/shared/dto/**/*.ts"]
+            }
+        }
+    }
+}

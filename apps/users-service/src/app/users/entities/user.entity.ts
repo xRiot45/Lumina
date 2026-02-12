@@ -1,4 +1,4 @@
-import { BaseEntity } from '@lumina/shared-entities/';
+import { BaseEntity } from '@lumina/shared-entities';
 import { Column } from 'typeorm';
 
 export class User extends BaseEntity {

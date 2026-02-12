@@ -1,1 +1,1 @@
-export * from './lib/base.entity.js';
+export * from './lib/base.entity';

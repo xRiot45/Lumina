@@ -1,4 +1,4 @@
-import { LoggerModule } from '@lumina/shared-logger/';
+import { LoggerModule } from '@lumina/shared-logger';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';

@@ -13,12 +13,6 @@
             "path": "./libs/shared/types"
         },
         {
-            "path": "./libs/shared/constants"
-        },
-        {
-            "path": "./libs/shared/schemas"
-        },
-        {
             "path": "./apps/auth-service"
         },
         {

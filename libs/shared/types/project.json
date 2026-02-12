@@ -1,0 +1,14 @@
+{
+    "name": "shared-types",
+    "projectType": "library",
+    "sourceRoot": "libs/shared/types/src",
+    "targets": {
+        "lint": {
+            "executor": "@nx/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["libs/shared/types/**/*.ts"]
+            }
+        }
+    }
+}
