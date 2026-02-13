@@ -1,80 +1,83 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
-import { isObject } from 'class-validator';
+import { IErrorResponse, IMicroserviceErrorPayload } from '@lumina/shared-types';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { Request, Response } from 'express';
-
-interface HttpExceptionResponse {
-    message: string | string[];
-    error?: string;
-    statusCode?: number;
-}
-
-interface ErrorResponseBody {
-    success: false;
-    statusCode: number;
-    error: string;
-    message: string;
-    path: string;
-    timestamp: string;
-    errors?: string[];
-    stack?: string;
-}
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+    private readonly logger = new Logger(GlobalExceptionFilter.name);
+
     catch(exception: unknown, host: ArgumentsHost): void {
+        console.log('🔥 RAW EXCEPTION:', JSON.stringify(exception, null, 2));
+
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
         const request = ctx.getRequest<Request>();
 
-        const isProduction = process.env.NODE_ENV === 'production';
+        let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
+        let message: string | string[] = 'Internal server error';
+        let errorType: string | undefined = 'Internal Server Error';
 
-        let status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        let message = 'Internal server error';
-        let errorName = 'InternalServerError';
-        let errors: string[] | undefined = undefined;
-        let stack: string | undefined = undefined;
-
+        // ----------------------------------------------------------------
+        // CASE 1: Handle HTTP Exception (Standard NestJS Errors)
+        // ----------------------------------------------------------------
         if (exception instanceof HttpException) {
             status = exception.getStatus();
-            const res = exception.getResponse() as HttpExceptionResponse;
+            const exceptionResponse = exception.getResponse();
 
-            if (typeof res === 'string') {
-                message = res;
-            } else if (isObject(res)) {
-                // Type casting ke interface yang sudah kita buat
-                const r = res;
-
-                if (Array.isArray(r.message)) {
-                    errors = r.message;
-                    message = r.message.join(', ');
-                } else if (typeof r.message === 'string') {
-                    message = r.message;
-                }
-
-                errorName = r.error ?? exception.name;
+            // Type Narrowing untuk response body
+            if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+                const payload = exceptionResponse as IMicroserviceErrorPayload;
+                message = payload.message || exception.message;
+                errorType = payload.error || 'HttpException';
+            } else {
+                message = exception.message;
             }
-
-            if (!isProduction && exception instanceof Error) {
-                stack = exception.stack;
-            }
-        } else if (exception instanceof Error) {
-            message = exception.message;
-            errorName = exception.name;
-            stack = isProduction ? undefined : exception.stack;
         }
 
-        // Membangun body dengan tipe ErrorResponseBody
-        const responseBody: ErrorResponseBody = {
-            success: false,
+        // ----------------------------------------------------------------
+        // CASE 2: Handle RPC Exception (Errors from Microservices via TCP)
+        // ----------------------------------------------------------------
+        else if (exception instanceof RpcException) {
+            const errorPayload = exception.getError();
+
+            if (typeof errorPayload === 'object' && errorPayload !== null) {
+                const payload = errorPayload as IMicroserviceErrorPayload;
+
+                status = payload.statusCode || payload.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                message = payload.message || 'Microservice Error';
+                errorType = payload.error || 'RpcException';
+            } else if (typeof errorPayload === 'string') {
+                message = errorPayload;
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // CASE 3: Handle Generic JavaScript Error
+        // ----------------------------------------------------------------
+        else if (exception instanceof Error) {
+            this.logger.error(`Unexpected Error: ${exception.message}`, exception.stack);
+            message = exception.message;
+        }
+
+        // ----------------------------------------------------------------
+        // SAFETY CHECK: Pastikan status code valid (Range HTTP 100-599)
+        // ----------------------------------------------------------------
+        if (status < 100 || status > 599) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        // ----------------------------------------------------------------
+        // FINAL RESPONSE CONSTRUCTION
+        // ----------------------------------------------------------------
+        const errorResponse: IErrorResponse = {
             statusCode: status,
-            error: errorName,
-            message,
-            path: request.url,
+            message: message,
+            error: errorType,
             timestamp: new Date().toISOString(),
-            ...(errors ? { errors } : {}),
-            ...(stack ? { stack } : {}),
+            path: request.url,
         };
 
-        response.status(status).json(responseBody);
+        response.status(status).json(errorResponse);
     }
 }

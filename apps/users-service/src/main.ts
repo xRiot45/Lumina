@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { MainModule } from './main.module';
@@ -12,7 +13,7 @@ async function bootstrap() {
     });
 
     await app.listen();
-    console.log('Users service is listening on port 3002');
+    Logger.log('Users service is listening on port 3002');
 }
 
 bootstrap();

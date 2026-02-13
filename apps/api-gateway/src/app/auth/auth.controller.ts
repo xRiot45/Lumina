@@ -1,13 +1,13 @@
 import { RegisterDto } from '@lumina/shared-dto';
-import { Body, Controller, Inject, Post } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Body, Controller, Post } from '@nestjs/common';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-    constructor(@Inject('AUTH_SERVICE') private readonly authClient: ClientProxy) {}
+    constructor(private readonly authService: AuthService) {}
 
     @Post('register')
     async register(@Body() registerDto: RegisterDto) {
-        return this.authClient.send({ cmd: 'auth_register' }, registerDto);
+        return await this.authService.register(registerDto);
     }
 }

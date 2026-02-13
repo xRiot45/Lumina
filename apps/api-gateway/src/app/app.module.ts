@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { ResponseInterceptor } from '@lumina/shared-common';
+import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthModule } from './auth/auth.module';
 
+@Global()
 @Module({
     imports: [
         ClientsModule.register([
@@ -24,7 +26,6 @@ import { AuthModule } from './auth/auth.module';
         ]),
         AuthModule,
     ],
-    controllers: [],
-    providers: [],
+    providers: [ResponseInterceptor],
 })
 export class AppModule {}

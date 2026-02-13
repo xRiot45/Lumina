@@ -1,7 +1,7 @@
-import { ApiResponse } from '@lumina/shared-types';
+import { IApiResponse } from '@lumina/shared-types';
 
 export function isCustomFormattedResponse<T>(
-    data: T | Partial<ApiResponse<unknown>> | undefined | null,
-): data is Partial<ApiResponse<T>> {
+    data: T | Partial<IApiResponse<unknown>> | undefined | null,
+): data is Partial<IApiResponse<T>> {
     return typeof data === 'object' && data !== null && 'success' in data;
 }

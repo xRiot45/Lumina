@@ -1,1 +1,1 @@
-export * from './lib/api/api-response.interface.js';
+export * from './lib/api/response.interface';

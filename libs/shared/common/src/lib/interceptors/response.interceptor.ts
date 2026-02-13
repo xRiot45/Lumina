@@ -1,24 +1,24 @@
-import { ApiResponse } from '@lumina/shared-types';
+import { IApiResponse } from '@lumina/shared-types';
 import { isCustomFormattedResponse } from '@lumina/shared-utils';
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Response } from 'express';
 import { map, Observable } from 'rxjs';
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
-    intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
+export class ResponseInterceptor<T> implements NestInterceptor<T, IApiResponse<T>> {
+    intercept(context: ExecutionContext, next: CallHandler): Observable<IApiResponse<T>> {
         const response = context.switchToHttp().getResponse<Response>();
         const statusCode = response.statusCode;
 
         return next.handle().pipe(
-            map((data: T | Partial<ApiResponse<T>> | undefined | null): ApiResponse<T> => {
+            map((data: T | Partial<IApiResponse<T>> | undefined | null): IApiResponse<T> => {
                 if (typeof data === 'object' && data !== null && 'data' in data && 'meta' in data && 'links' in data) {
                     return {
                         success: true,
                         statusCode,
                         timestamp: new Date().toISOString(),
                         ...data,
-                    } as ApiResponse<T>;
+                    } as IApiResponse<T>;
                 }
 
                 if (isCustomFormattedResponse(data)) {
@@ -26,7 +26,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
                         ...data,
                         statusCode: statusCode,
                         timestamp: new Date().toISOString(),
-                    } as ApiResponse<T>;
+                    } as IApiResponse<T>;
                 }
 
                 if (data === undefined || data === null) {
