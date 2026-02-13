@@ -1,3 +1,4 @@
+import { RegisterDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
@@ -13,7 +14,7 @@ export class UsersService {
         private readonly logger: LoggerService,
     ) {}
 
-    async create(data: any) {
+    async create(data: RegisterDto) {
         try {
             const user = this.usersRepository.create(data);
             return await this.usersRepository.save(user);

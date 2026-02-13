@@ -1,4 +1,5 @@
-import { IErrorResponse, IMicroserviceErrorPayload } from '@lumina/shared-types';
+import { IErrorResponse } from '@lumina/shared-types';
+import { isMicroserviceError, isNestedErrorPayload } from '@lumina/shared-utils';
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { Request, Response } from 'express';
@@ -8,68 +9,73 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     private readonly logger = new Logger(GlobalExceptionFilter.name);
 
     catch(exception: unknown, host: ArgumentsHost): void {
-        console.log('🔥 RAW EXCEPTION:', JSON.stringify(exception, null, 2));
-
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
         const request = ctx.getRequest<Request>();
 
-        let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
+        let status = HttpStatus.INTERNAL_SERVER_ERROR;
         let message: string | string[] = 'Internal server error';
         let errorType: string | undefined = 'Internal Server Error';
 
-        // ----------------------------------------------------------------
-        // CASE 1: Handle HTTP Exception (Standard NestJS Errors)
-        // ----------------------------------------------------------------
+        const stackTrace = exception instanceof Error ? exception.stack : undefined;
+
+        // Handle HTTP Exception (Standard NestJS)
         if (exception instanceof HttpException) {
             status = exception.getStatus();
-            const exceptionResponse = exception.getResponse();
+            const res = exception.getResponse();
 
-            // Type Narrowing untuk response body
-            if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-                const payload = exceptionResponse as IMicroserviceErrorPayload;
-                message = payload.message || exception.message;
-                errorType = payload.error || 'HttpException';
+            if (isMicroserviceError(res)) {
+                message = res.message || exception.message;
+                errorType = res.error || 'HttpException';
             } else {
                 message = exception.message;
             }
         }
 
-        // ----------------------------------------------------------------
-        // CASE 2: Handle RPC Exception (Errors from Microservices via TCP)
-        // ----------------------------------------------------------------
+        // Handle RpcException
         else if (exception instanceof RpcException) {
             const errorPayload = exception.getError();
 
-            if (typeof errorPayload === 'object' && errorPayload !== null) {
-                const payload = errorPayload as IMicroserviceErrorPayload;
-
-                status = payload.statusCode || payload.status || HttpStatus.INTERNAL_SERVER_ERROR;
-                message = payload.message || 'Microservice Error';
-                errorType = payload.error || 'RpcException';
+            if (isMicroserviceError(errorPayload)) {
+                status = errorPayload.statusCode || errorPayload.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                message = errorPayload.message || 'Microservice Error';
+                errorType = errorPayload.error || 'RpcException';
             } else if (typeof errorPayload === 'string') {
                 message = errorPayload;
             }
         }
 
-        // ----------------------------------------------------------------
-        // CASE 3: Handle Generic JavaScript Error
-        // ----------------------------------------------------------------
+        //  Handle "Serialized Error"
+        else if (isMicroserviceError(exception)) {
+            status = exception.statusCode || exception.status || HttpStatus.INTERNAL_SERVER_ERROR;
+            message = exception.message || 'Microservice Error';
+            errorType = exception.error || 'RpcException';
+        }
+
+        // Handle Nested Error
+        else if (isNestedErrorPayload(exception)) {
+            const nested = exception.error;
+            status = nested.statusCode || nested.status || HttpStatus.INTERNAL_SERVER_ERROR;
+            message = nested.message || 'Nested Error';
+            errorType = nested.error || 'RpcException';
+        }
+
+        // Handle Generic JavaScript Error
         else if (exception instanceof Error) {
-            this.logger.error(`Unexpected Error: ${exception.message}`, exception.stack);
             message = exception.message;
         }
 
-        // ----------------------------------------------------------------
-        // SAFETY CHECK: Pastikan status code valid (Range HTTP 100-599)
-        // ----------------------------------------------------------------
-        if (status < 100 || status > 599) {
+        if (typeof status !== 'number' || status < 100 || status > 599) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
 
-        // ----------------------------------------------------------------
-        // FINAL RESPONSE CONSTRUCTION
-        // ----------------------------------------------------------------
+        if (status >= 500) {
+            this.logger.error(
+                `[${request.method}] ${request.url} - Status: ${status}`,
+                stackTrace || JSON.stringify(exception),
+            );
+        }
+
         const errorResponse: IErrorResponse = {
             statusCode: status,
             message: message,
@@ -77,6 +83,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             timestamp: new Date().toISOString(),
             path: request.url,
         };
+
+        if (process.env.NODE_ENV !== 'production') {
+            errorResponse.stack = stackTrace;
+        }
 
         response.status(status).json(errorResponse);
     }

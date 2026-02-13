@@ -1,13 +1,13 @@
 import { RegisterDto, UserResponseDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
-import { mapToDto } from '@lumina/shared-utils';
+import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthService {
-    private readonly context = `${AuthService.name}`;
+    private readonly context = AuthService.name;
 
     constructor(
         @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
@@ -19,7 +19,6 @@ export class AuthService {
 
         try {
             const response = await firstValueFrom(this.authClient.send({ cmd: 'auth_register' }, registerDto));
-
             this.logger.log(
                 {
                     message: `[Gateway] Registration successful`,
@@ -29,17 +28,32 @@ export class AuthService {
             );
 
             return mapToDto(UserResponseDto, response);
-        } catch (error: any) {
+        } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
 
-            if (error.statusCode || error.status) {
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
                 throw new HttpException(
                     {
-                        statusCode: error.statusCode || error.status,
-                        message: error.message || 'Service Error',
-                        error: error.error || 'Bad Request',
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
                     },
-                    error.statusCode || error.status,
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
                 );
             }
 
@@ -47,7 +61,7 @@ export class AuthService {
                 {
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                     message: 'Internal Server Error (Gateway)',
-                    error: 'Internal Server Error',
+                    error: 'Unknown Error',
                 },
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );

@@ -22,7 +22,11 @@ export class AuthService {
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            const payload = { fullName, email, password: hashedPassword };
+            const payload = {
+                fullName,
+                email,
+                password: hashedPassword,
+            };
 
             const newUser = await firstValueFrom(
                 this.usersClient.send<UserResponseDto>({ cmd: 'create_user' }, payload).pipe(

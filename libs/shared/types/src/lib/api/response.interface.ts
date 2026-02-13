@@ -12,12 +12,13 @@ export interface IErrorResponse {
     error?: string;
     timestamp: string;
     path: string;
+    stack?: string;
 }
 
-export interface IMicroserviceErrorPayload {
+export interface IMicroserviceErrorResponse {
     success: boolean;
     statusCode?: number;
     status?: number;
-    message?: string | string[];
     error?: string;
+    message?: string | string[];
 }
