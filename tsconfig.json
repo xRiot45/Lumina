@@ -32,6 +32,9 @@
         },
         {
             "path": "./libs/shared/utils"
+        },
+        {
+            "path": "./libs/shared/interfaces"
         }
     ]
 }
