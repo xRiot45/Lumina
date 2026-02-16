@@ -1,4 +1,5 @@
 import { LoginDto, LoginResponseDto, RegisterDto, UserResponseDto } from '@lumina/shared-dto';
+import { IJwtPayload, IUser } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -100,7 +101,7 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    private async findUserByEmail(email: string): Promise<any> {
+    private async findUserByEmail(email: string) {
         try {
             return await firstValueFrom(
                 this.usersClient.send({ cmd: 'find_user_by_email' }, { email }).pipe(
@@ -125,8 +126,8 @@ export class AuthService {
         }
     }
 
-    private async generateToken(user: any): Promise<LoginResponseDto> {
-        const payload = {
+    private async generateToken(user: IUser) {
+        const payload: IJwtPayload = {
             sub: user.id,
             email: user.email,
             fullName: user.fullName,
