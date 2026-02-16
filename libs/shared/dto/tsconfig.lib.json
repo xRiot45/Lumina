@@ -14,5 +14,9 @@
         "emitDecoratorMetadata": true
     },
     "include": ["src/**/*.ts"],
-    "references": []
+    "references": [
+        {
+            "path": "../interfaces/tsconfig.lib.json"
+        }
+    ]
 }

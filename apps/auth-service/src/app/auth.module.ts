@@ -1,5 +1,6 @@
 import { LoggerModule } from '@lumina/shared-logger';
 import { Module } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -19,6 +20,6 @@ import { AuthService } from './auth.service';
         ]),
     ],
     controllers: [AuthController],
-    providers: [AuthService],
+    providers: [AuthService, JwtService],
 })
 export class AuthModule {}

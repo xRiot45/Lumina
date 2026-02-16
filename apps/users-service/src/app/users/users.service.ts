@@ -36,4 +36,13 @@ export class UsersService {
             });
         }
     }
+
+    async findUserByEmail(email: string) {
+        const user = await this.usersRepository.findOne({
+            where: { email },
+            select: ['id', 'email', 'fullName', 'password'],
+        });
+
+        return user;
+    }
 }

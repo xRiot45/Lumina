@@ -1,6 +1,7 @@
-import { RegisterDto, UserResponseDto } from '@lumina/shared-dto';
+import { LoginDto, LoginResponseDto, RegisterDto, UserResponseDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
 import { catchError, firstValueFrom, throwError, timeout, TimeoutError } from 'rxjs';
@@ -13,6 +14,7 @@ export class AuthService {
         @Inject('USERS_SERVICE')
         private readonly usersClient: ClientProxy,
         private readonly logger: LoggerService,
+        private readonly jwtService: JwtService,
     ) {}
 
     async register(registerDto: RegisterDto): Promise<UserResponseDto> {
@@ -76,5 +78,68 @@ export class AuthService {
                 error: 'Internal Server Error',
             });
         }
+    }
+
+    async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+        const { email, password } = loginDto;
+        this.logger.log({ message: 'Attempting login', email }, this.context);
+
+        const user = await this.findUserByEmail(email);
+
+        const isPasswordValid = user ? await bcrypt.compare(password, user.password) : false;
+
+        if (!user || !isPasswordValid) {
+            this.logger.warn({ message: 'Login failed: Invalid credentials', email }, this.context);
+            throw new RpcException({
+                statusCode: HttpStatus.UNAUTHORIZED,
+                message: 'Invalid email or password',
+                error: 'Unauthorized',
+            });
+        }
+
+        return this.generateToken(user);
+    }
+
+    private async findUserByEmail(email: string): Promise<any> {
+        try {
+            return await firstValueFrom(
+                this.usersClient.send({ cmd: 'find_user_by_email' }, { email }).pipe(
+                    timeout(5000),
+                    catchError((err) => {
+                        if (err instanceof TimeoutError) {
+                            return throwError(() => new TimeoutError());
+                        }
+                        return throwError(() => err);
+                    }),
+                ),
+            );
+        } catch (error) {
+            if (error instanceof TimeoutError) {
+                throw new RpcException({
+                    statusCode: HttpStatus.REQUEST_TIMEOUT,
+                    message: 'Users service unreachable',
+                    error: 'Request Timeout',
+                });
+            }
+            throw error;
+        }
+    }
+
+    private async generateToken(user: any): Promise<LoginResponseDto> {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            fullName: user.fullName,
+            type: 'access',
+        };
+
+        const accessToken = await this.jwtService.signAsync(payload, {
+            expiresIn: Number(process.env.JWT_ACCESS_EXPIRES_IN) || '1h',
+            secret: process.env.JWT_ACCESS_TOKEN_SECRET,
+        });
+
+        this.logger.log({ message: 'Login successful', userId: user.id }, this.context);
+
+        return { accessToken };
     }
 }
