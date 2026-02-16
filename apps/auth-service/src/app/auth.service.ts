@@ -10,7 +10,8 @@ export class AuthService {
     private readonly context = AuthService.name;
 
     constructor(
-        @Inject('USERS_SERVICE') private readonly usersClient: ClientProxy,
+        @Inject('USERS_SERVICE')
+        private readonly usersClient: ClientProxy,
         private readonly logger: LoggerService,
     ) {}
 
