@@ -1,3 +1,4 @@
+import { RoleEnum } from '@lumina/shared-common';
 import { BaseEntity } from '@lumina/shared-entities';
 import { Column, Entity } from 'typeorm';
 
@@ -24,4 +25,11 @@ export class User extends BaseEntity {
         nullable: false,
     })
     password!: string;
+
+    @Column({
+        type: 'enum',
+        enum: RoleEnum,
+        default: RoleEnum.CUSTOMER,
+    })
+    role!: RoleEnum;
 }

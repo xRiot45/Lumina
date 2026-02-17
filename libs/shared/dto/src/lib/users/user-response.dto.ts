@@ -1,3 +1,4 @@
+import { RoleEnum } from '@lumina/shared-common';
 import { Exclude, Expose } from 'class-transformer';
 
 export class UserResponseDto {
@@ -12,6 +13,9 @@ export class UserResponseDto {
 
     @Exclude()
     password!: string;
+
+    @Expose()
+    role!: RoleEnum;
 
     @Expose()
     createdAt!: Date;

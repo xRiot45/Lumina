@@ -36,6 +36,9 @@
         },
         {
             "path": "../../libs/shared/entities/tsconfig.lib.json"
+        },
+        {
+            "path": "../../libs/shared/common/tsconfig.lib.json"
         }
     ]
 }

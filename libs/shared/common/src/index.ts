@@ -2,6 +2,7 @@
 export * from './lib/decorators/current-user.decorator';
 
 // Enums
+export * from './lib/enums/role.enum';
 
 // Filters
 export * from './lib/filters/global-exception.filter';
