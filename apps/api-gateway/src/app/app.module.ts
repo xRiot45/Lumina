@@ -12,7 +12,8 @@ import { ProductsModule } from './products/products.module';
                 name: 'AUTH_SERVICE',
                 transport: Transport.TCP,
                 options: {
-                    host: '0.0.0.0',
+                    host: 'localhost',
+                    // host: '0.0.0.0',
                     port: 3001,
                 },
             },
@@ -20,8 +21,18 @@ import { ProductsModule } from './products/products.module';
                 name: 'USERS_SERVICE',
                 transport: Transport.TCP,
                 options: {
-                    host: '0.0.0.0',
+                    host: 'localhost',
+                    // host: '0.0.0.0',
                     port: 3002,
+                },
+            },
+            {
+                name: 'PRODUCTS_SERVICE',
+                transport: Transport.TCP,
+                options: {
+                    host: 'localhost',
+                    // host: '0.0.0.0',
+                    port: 3003,
                 },
             },
         ]),
