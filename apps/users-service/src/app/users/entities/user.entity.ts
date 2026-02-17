@@ -1,5 +1,5 @@
 import { BaseEntity } from '@lumina/shared-entities';
-import { RoleEnum } from '@lumina/shared-interfaces';
+import { UserRole } from '@lumina/shared-interfaces';
 import { Column, Entity } from 'typeorm';
 
 @Entity('users')
@@ -28,8 +28,8 @@ export class User extends BaseEntity {
 
     @Column({
         type: 'enum',
-        enum: RoleEnum,
-        default: RoleEnum.CUSTOMER,
+        enum: UserRole,
+        default: UserRole.CUSTOMER,
     })
-    role!: RoleEnum;
+    role!: UserRole;
 }

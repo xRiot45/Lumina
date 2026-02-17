@@ -1,11 +1,11 @@
-import { RoleEnum } from '../enums/role.enum';
+import { UserRole } from '../enums/role.enum';
 
 export interface IUser {
     id: string;
     fullName: string;
     email: string;
     password?: string;
-    role: RoleEnum;
+    role: UserRole;
     createdAt: Date;
     updatedAt: Date;
 }
