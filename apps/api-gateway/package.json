@@ -1,4 +1,7 @@
 {
+    "dependencies": {
+        "@nestjs/mapped-types": "*"
+    },
     "name": "@lumina/api-gateway",
     "version": "0.0.1",
     "private": true,
