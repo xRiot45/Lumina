@@ -131,6 +131,7 @@ export class AuthService {
             sub: user.id,
             email: user.email,
             fullName: user.fullName,
+            role: user.role,
             type: 'access',
         };
 

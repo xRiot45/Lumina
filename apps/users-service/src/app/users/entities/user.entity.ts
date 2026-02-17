@@ -1,5 +1,5 @@
-import { RoleEnum } from '@lumina/shared-common';
 import { BaseEntity } from '@lumina/shared-entities';
+import { RoleEnum } from '@lumina/shared-interfaces';
 import { Column, Entity } from 'typeorm';
 
 @Entity('users')

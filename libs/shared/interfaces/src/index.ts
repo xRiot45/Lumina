@@ -8,3 +8,6 @@ export * from './lib/jwt/jwt-payload.interface';
 
 // User
 export * from './lib/users/user.interface';
+
+// Enums
+export * from './lib/enums/role.enum';
