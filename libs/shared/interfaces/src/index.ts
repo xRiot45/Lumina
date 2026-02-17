@@ -10,4 +10,4 @@ export * from './lib/jwt/jwt-payload.interface';
 export * from './lib/users/user.interface';
 
 // Enums
-export * from './lib/enums/role.enum';
+export * from './lib/enums/user-role.enum';
