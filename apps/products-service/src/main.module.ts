@@ -1,8 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { CategoriesModule } from './app/categories/categories.module';
 import { ProductsModule } from './app/products/products.module';
 import { DatabaseModule } from './core/database/database.module';
-import { CategoriesModule } from './app/categories/categories.module';
 
 @Global()
 @Module({

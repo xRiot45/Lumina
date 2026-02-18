@@ -19,6 +19,9 @@
             "path": "./apps/users-service"
         },
         {
+            "path": "./apps/products-service"
+        },
+        {
             "path": "./libs/shared/dto"
         },
         {
@@ -35,9 +38,6 @@
         },
         {
             "path": "./libs/shared/interfaces"
-        },
-        {
-            "path": "./apps/products-service"
         }
     ]
 }
