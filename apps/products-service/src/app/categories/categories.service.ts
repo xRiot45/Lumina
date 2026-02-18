@@ -1,26 +1,54 @@
-import { Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
+import { LoggerService } from '@lumina/shared-logger';
+import { autoGenerateSlug } from '@lumina/shared-utils';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CategoryEntity } from './entities/category.entity';
 
 @Injectable()
 export class CategoriesService {
-    create(createCategoryDto: CreateCategoryDto) {
-        return 'This action adds a new category';
-    }
+    private readonly context = `[SERVICE] ${CategoriesService.name}`;
 
-    findAll() {
-        return `This action returns all categories`;
-    }
+    constructor(
+        @InjectRepository(CategoryEntity)
+        private readonly categoriesRepository: Repository<CategoryEntity>,
+        private readonly logger: LoggerService,
+    ) {}
 
-    findOne(id: number) {
-        return `This action returns a #${id} category`;
-    }
+    async create(dto: CreateProductCategoryDto): Promise<ProductCategoryResponseDto> {
+        const { name } = dto;
+        this.logger.log({ message: 'Initiating category creation', name }, this.context);
 
-    update(id: number, updateCategoryDto: UpdateCategoryDto) {
-        return `This action updates a #${id} category`;
-    }
+        try {
+            const slug = autoGenerateSlug(name);
+            const newCategory = this.categoriesRepository.create({
+                name,
+                slug,
+            });
 
-    remove(id: number) {
-        return `This action removes a #${id} category`;
+            await this.categoriesRepository.save(newCategory);
+
+            this.logger.log({ message: 'Category created', id: newCategory.id, name }, this.context);
+            return newCategory;
+        } catch (error: any) {
+            if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+                this.logger.warn({ message: 'Category creation failed: Duplicate', name }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.CONFLICT,
+                    message: 'Category with this name or slug already exists',
+                    error: 'Conflict',
+                });
+            }
+
+            this.logger.error({ message: 'Error creating category', error: error.message }, error.stack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to create category',
+                error: 'Internal Server Error',
+            });
+        }
     }
 }

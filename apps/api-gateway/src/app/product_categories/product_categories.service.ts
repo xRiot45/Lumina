@@ -1,0 +1,62 @@
+import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
+import { LoggerService } from '@lumina/shared-logger';
+import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
+
+@Injectable()
+export class ProductCategoriesService {
+    private readonly context = `[GATEWAY] ${ProductCategoriesService.name}`;
+
+    constructor(
+        @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
+        private readonly logger: LoggerService,
+    ) {}
+
+    async create(dto: CreateProductCategoryDto): Promise<ProductCategoryResponseDto> {
+        this.logger.log(`[GATEWAY] Incoming create request for: ${JSON.stringify(dto)}`, this.context);
+
+        try {
+            const response = await firstValueFrom(this.productsClient.send({ cmd: 'create_product_category' }, dto));
+            return mapToDto(ProductCategoryResponseDto, response);
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+}

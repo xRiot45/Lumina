@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
+import { ProductCategoriesModule } from './product_categories/product_categories.module';
 
 @Global()
 @Module({
@@ -38,6 +39,7 @@ import { ProductsModule } from './products/products.module';
         ]),
         AuthModule,
         ProductsModule,
+        ProductCategoriesModule,
     ],
     providers: [ResponseInterceptor],
 })

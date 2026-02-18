@@ -1,4 +1,4 @@
-import { UserRole } from '@lumina/shared-common';
+import { UserRole } from '@lumina/shared-interfaces';
 import { Exclude, Expose } from 'class-transformer';
 
 export class UserResponseDto {
