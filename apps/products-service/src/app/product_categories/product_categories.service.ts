@@ -289,9 +289,35 @@ export class ProductCategoriesService {
                 throw error;
             }
 
-            const err = error as any;
-            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('uuid'))) {
-                this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            if (isDatabaseError(error)) {
+                if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.errno === 1451) {
+                    this.logger.warn({ message: 'Deletion failed: Category in use', id }, this.context);
+                    throw new RpcException({
+                        statusCode: HttpStatus.CONFLICT,
+                        message:
+                            'Cannot delete this category because it is still associated with one or more products.',
+                        error: 'Conflict',
+                    });
+                }
+
+                if (error.code === 'ER_BAD_FIELD_ERROR') {
+                    this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+                    throw new RpcException({
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: 'Invalid category ID format',
+                        error: 'Bad Request',
+                    });
+                }
+            }
+
+            if (errorMessage.toLowerCase().includes('uuid')) {
+                this.logger.warn(
+                    { message: 'Invalid ID format provided (UUID error)', id, errorMessage },
+                    this.context,
+                );
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_REQUEST,
                     message: 'Invalid category ID format',
@@ -299,7 +325,7 @@ export class ProductCategoriesService {
                 });
             }
 
-            this.logger.error({ message: 'Error removing category', error: err.message }, err.stack, this.context);
+            this.logger.error({ message: 'Error removing category', error: errorMessage }, errorStack, this.context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
