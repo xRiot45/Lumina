@@ -217,21 +217,37 @@ export class ProductCategoriesService {
                 throw error;
             }
 
-            const err = error as any;
-            if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
-                this.logger.warn(
-                    { message: 'Update failed: Category name already exists', id, name: dto.name },
-                    this.context,
-                );
-                throw new RpcException({
-                    statusCode: HttpStatus.CONFLICT,
-                    message: 'Category with this name or slug already exists',
-                    error: 'Conflict',
-                });
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            if (isDatabaseError(error)) {
+                if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+                    this.logger.warn(
+                        { message: 'Update failed: Category name already exists', id, name: dto.name },
+                        this.context,
+                    );
+                    throw new RpcException({
+                        statusCode: HttpStatus.CONFLICT,
+                        message: 'Category with this name or slug already exists',
+                        error: 'Conflict',
+                    });
+                }
+
+                if (error.code === 'ER_BAD_FIELD_ERROR') {
+                    this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+                    throw new RpcException({
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: 'Invalid category ID format',
+                        error: 'Bad Request',
+                    });
+                }
             }
 
-            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('uuid'))) {
-                this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+            if (errorMessage.toLowerCase().includes('uuid')) {
+                this.logger.warn(
+                    { message: 'Invalid ID format provided (UUID error)', id, errorMessage },
+                    this.context,
+                );
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_REQUEST,
                     message: 'Invalid category ID format',
@@ -239,7 +255,7 @@ export class ProductCategoriesService {
                 });
             }
 
-            this.logger.error({ message: 'Error updating category', error: err.message }, err.stack, this.context);
+            this.logger.error({ message: 'Error updating category', error: errorMessage }, errorStack, this.context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
