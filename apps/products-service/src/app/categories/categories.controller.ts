@@ -1,5 +1,5 @@
 import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
-import type { IUpdateProductCategoryPayload } from '@lumina/shared-interfaces';
+import type { IDeleteProductCategoryPayload, IUpdateProductCategoryPayload } from '@lumina/shared-interfaces';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CategoriesService } from './categories.service';
@@ -26,5 +26,10 @@ export class CategoriesController {
     @MessagePattern({ cmd: 'update_product_category' })
     async update(@Payload() payload: IUpdateProductCategoryPayload): Promise<ProductCategoryResponseDto> {
         return await this.categoriesService.update(payload?.id, payload?.data);
+    }
+
+    @MessagePattern({ cmd: 'remove_product_category' })
+    async remove(@Payload() payload: IDeleteProductCategoryPayload): Promise<{ success: boolean }> {
+        return await this.categoriesService.remove(payload?.id);
     }
 }

@@ -1,5 +1,5 @@
 import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
-import { IUpdateProductCategoryPayload } from '@lumina/shared-interfaces';
+import { IDeleteProductCategoryPayload, IUpdateProductCategoryPayload } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -168,6 +168,56 @@ export class ProductCategoriesService {
                 this.productsClient.send({ cmd: 'update_product_category' }, payload),
             );
             return mapToDto(ProductCategoryResponseDto, response);
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async remove(id: string): Promise<void> {
+        this.logger.log(`[GATEWAY] Incoming remove request for: ${id}`, this.context);
+
+        const payload: IDeleteProductCategoryPayload = {
+            id,
+        };
+
+        try {
+            await firstValueFrom(this.productsClient.send({ cmd: 'remove_product_category' }, payload));
+            return;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
 

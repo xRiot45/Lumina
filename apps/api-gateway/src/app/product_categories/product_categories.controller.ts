@@ -6,7 +6,7 @@ import {
     UpdateProductCategoryDto,
 } from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
-import { Body, Controller, Get, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ProductCategoriesService } from './product_categories.service';
@@ -67,6 +67,18 @@ export class ProductCategoriesController {
             timestamp: new Date(),
             message: 'Product category updated successfully',
             data: result,
+        };
+    }
+
+    @Delete(':id')
+    @Roles(UserRole.ADMIN)
+    async remove(@Param('id') id: string): Promise<BaseResponseDto> {
+        await this.productCategoriesService.remove(id);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product category deleted successfully',
         };
     }
 }

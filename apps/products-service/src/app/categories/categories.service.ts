@@ -179,4 +179,48 @@ export class CategoriesService {
             });
         }
     }
+
+    async remove(id: string): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Initiating category removal', id }, this.context);
+
+        try {
+            const category = await this.categoriesRepository.findOneBy({ id });
+
+            if (!category) {
+                this.logger.warn({ message: 'Category not found', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Category not found',
+                    error: 'Not Found',
+                });
+            }
+
+            await this.categoriesRepository.remove(category);
+
+            this.logger.log({ message: 'Category removed', id: category.id, name: category.name }, this.context);
+            return { success: true };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const err = error as any;
+            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('uuid'))) {
+                this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: 'Invalid category ID format',
+                    error: 'Bad Request',
+                });
+            }
+
+            this.logger.error({ message: 'Error removing category', error: err.message }, err.stack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to remove category',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }
