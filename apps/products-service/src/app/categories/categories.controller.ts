@@ -16,4 +16,9 @@ export class CategoriesController {
     async findAll(): Promise<ProductCategoryResponseDto[]> {
         return await this.categoriesService.findAll();
     }
+
+    @MessagePattern({ cmd: 'find_product_category_by_id' })
+    async findById(@Payload() id: string): Promise<ProductCategoryResponseDto> {
+        return await this.categoriesService.findById(id);
+    }
 }

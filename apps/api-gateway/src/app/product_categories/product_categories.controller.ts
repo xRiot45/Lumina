@@ -1,7 +1,7 @@
 import { Roles } from '@lumina/shared-common';
 import { BaseResponseDto, CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
-import { Body, Controller, Get, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ProductCategoriesService } from './product_categories.service';
@@ -35,6 +35,19 @@ export class ProductCategoriesController {
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
             message: 'Product categories found successfully',
+            data: result,
+        };
+    }
+
+    @Get(':id')
+    @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+    async findById(@Param('id') id: string): Promise<BaseResponseDto<ProductCategoryResponseDto>> {
+        const result = await this.productCategoriesService.findById(id);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product category found successfully',
             data: result,
         };
     }

@@ -68,4 +68,55 @@ export class CategoriesService {
             });
         }
     }
+
+    async findById(id: string): Promise<ProductCategoryResponseDto> {
+        this.logger.log({ message: 'Initiating category find by id', id }, this.context);
+
+        try {
+            const category = await this.categoriesRepository.findOneBy({ id });
+
+            if (!category) {
+                this.logger.warn({ message: 'Category not found', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Category not found',
+                    error: 'Not Found',
+                });
+            }
+
+            this.logger.log({ message: 'Category found', id: category.id, name: category.name }, this.context);
+            return category;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const err = error as any;
+            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('uuid'))) {
+                this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: 'Invalid category ID format',
+                    error: 'Bad Request',
+                });
+            }
+
+            if (err.code === 'ER_NO_DEFAULT_FOR_FIELD') {
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Category not found',
+                    error: 'Not Found',
+                });
+            }
+
+            // 4. Fallback: Benar-benar System Error (Misal DB mati)
+            this.logger.error({ message: 'Error finding category', error: err.message }, err.stack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to find category',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

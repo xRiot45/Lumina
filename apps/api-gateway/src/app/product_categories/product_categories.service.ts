@@ -107,4 +107,50 @@ export class ProductCategoriesService {
             );
         }
     }
+
+    async findById(id: string): Promise<ProductCategoryResponseDto> {
+        this.logger.log(`[GATEWAY] Incoming find by id request for: ${id}`, this.context);
+
+        try {
+            const response = await firstValueFrom(this.productsClient.send({ cmd: 'find_product_category_by_id' }, id));
+            return mapToDto(ProductCategoryResponseDto, response);
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
 }
