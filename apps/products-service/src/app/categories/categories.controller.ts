@@ -11,4 +11,9 @@ export class CategoriesController {
     async create(@Payload() dto: CreateProductCategoryDto): Promise<ProductCategoryResponseDto> {
         return await this.categoriesService.create(dto);
     }
+
+    @MessagePattern({ cmd: 'find_all_product_categories' })
+    async findAll(): Promise<ProductCategoryResponseDto[]> {
+        return await this.categoriesService.findAll();
+    }
 }
