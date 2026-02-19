@@ -6,7 +6,7 @@ import {
 } from '@lumina/shared-dto';
 import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
-import { autoGenerateSlug } from '@lumina/shared-utils';
+import { autoGenerateSlug, isDatabaseError } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -43,19 +43,19 @@ export class ProductCategoriesService {
                 throw error;
             }
 
-            const err = error as any;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
 
-            if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
-                this.logger.warn({ message: 'Category creation failed: Duplicate', name }, this.context);
-                throw new RpcException({
-                    statusCode: HttpStatus.CONFLICT,
-                    message: 'Category with this name or slug already exists',
-                    error: 'Conflict',
-                });
+            if (isDatabaseError(error)) {
+                if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+                    this.logger.warn({ message: 'Category creation failed: Duplicate', name }, this.context);
+                    throw new RpcException({
+                        statusCode: HttpStatus.CONFLICT,
+                        message: 'Category with this name or slug already exists',
+                        error: 'Conflict',
+                    });
+                }
             }
-
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            const errorStack = err instanceof Error ? err.stack : undefined;
 
             this.logger.error({ message: 'Error creating category', error: errorMessage }, errorStack, this.context);
 
@@ -129,7 +129,6 @@ export class ProductCategoriesService {
 
         try {
             const category = await this.productCategoriesRepository.findOneBy({ id });
-
             if (!category) {
                 this.logger.warn({ message: 'Category not found', id }, this.context);
                 throw new RpcException({
@@ -146,9 +145,33 @@ export class ProductCategoriesService {
                 throw error;
             }
 
-            const err = error as any;
-            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('uuid'))) {
-                this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            if (isDatabaseError(error)) {
+                if (error.code === 'ER_BAD_FIELD_ERROR') {
+                    this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+                    throw new RpcException({
+                        statusCode: HttpStatus.BAD_REQUEST,
+                        message: 'Invalid category ID format',
+                        error: 'Bad Request',
+                    });
+                }
+
+                if (error.code === 'ER_NO_DEFAULT_FOR_FIELD') {
+                    throw new RpcException({
+                        statusCode: HttpStatus.NOT_FOUND,
+                        message: 'Category not found',
+                        error: 'Not Found',
+                    });
+                }
+            }
+
+            if (errorMessage.toLowerCase().includes('uuid')) {
+                this.logger.warn(
+                    { message: 'Invalid ID format provided (UUID error)', id, errorMessage },
+                    this.context,
+                );
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_REQUEST,
                     message: 'Invalid category ID format',
@@ -156,16 +179,7 @@ export class ProductCategoriesService {
                 });
             }
 
-            if (err.code === 'ER_NO_DEFAULT_FOR_FIELD') {
-                throw new RpcException({
-                    statusCode: HttpStatus.NOT_FOUND,
-                    message: 'Category not found',
-                    error: 'Not Found',
-                });
-            }
-
-            // 4. Fallback: Benar-benar System Error (Misal DB mati)
-            this.logger.error({ message: 'Error finding category', error: err.message }, err.stack, this.context);
+            this.logger.error({ message: 'Error finding category', error: errorMessage }, errorStack, this.context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
