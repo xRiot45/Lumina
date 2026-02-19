@@ -1,8 +1,8 @@
-export interface IUpdateProductCategories {
+export interface IUpdateProductCategory {
     name: string;
 }
 
 export interface IUpdateProductCategoryPayload {
     id: string;
-    data: IUpdateProductCategories;
+    data: IUpdateProductCategory;
 }

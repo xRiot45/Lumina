@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { CategoriesModule } from './app/categories/categories.module';
+import { ProductCategoriesModule } from './app/product_categories/product_categories.module';
 import { ProductsModule } from './app/products/products.module';
 import { DatabaseModule } from './core/database/database.module';
 
@@ -12,7 +12,7 @@ import { DatabaseModule } from './core/database/database.module';
         }),
         DatabaseModule,
         ProductsModule,
-        CategoriesModule,
+        ProductCategoriesModule,
     ],
     providers: [],
 })

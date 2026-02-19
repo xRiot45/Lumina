@@ -5,9 +5,12 @@ export * from './lib/auth/login.dto';
 export * from './lib/auth/register.dto';
 
 // Products DTO
-export * from './lib/products/categories/category-response.dto';
-export * from './lib/products/categories/create-category.dto';
-export * from './lib/products/categories/update-category.dto';
+export * from './lib/products/product_categories/create-product-category.dto';
+export * from './lib/products/product_categories/product-category-response.dto';
+export * from './lib/products/product_categories/update-product-category.dto';
 
 // Users DTO
 export * from './lib/users/user-response.dto';
+
+// Pagination DTO
+export * from './lib/pagination/pagination.dto';

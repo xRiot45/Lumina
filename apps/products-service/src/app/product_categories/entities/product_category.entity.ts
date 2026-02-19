@@ -1,9 +1,9 @@
 import { BaseEntity } from '@lumina/shared-entities';
 import { Column, Entity, Unique } from 'typeorm';
 
-@Entity('categories')
+@Entity('product_categories')
 @Unique(['name', 'slug'])
-export class CategoryEntity extends BaseEntity {
+export class ProductCategoryEntity extends BaseEntity {
     @Column({
         type: 'varchar',
         length: 100,

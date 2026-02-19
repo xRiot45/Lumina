@@ -1,19 +1,25 @@
-import { CreateProductCategoryDto, ProductCategoryResponseDto, UpdateProductCategoryDto } from '@lumina/shared-dto';
+import {
+    CreateProductCategoryDto,
+    PaginationDto,
+    ProductCategoryResponseDto,
+    UpdateProductCategoryDto,
+} from '@lumina/shared-dto';
+import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { autoGenerateSlug } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CategoryEntity } from './entities/category.entity';
+import { ILike, Repository } from 'typeorm';
+import { ProductCategoryEntity } from './entities/product_category.entity';
 
 @Injectable()
-export class CategoriesService {
-    private readonly context = `[SERVICE] ${CategoriesService.name}`;
+export class ProductCategoriesService {
+    private readonly context = `[SERVICE] ${ProductCategoriesService.name}`;
 
     constructor(
-        @InjectRepository(CategoryEntity)
-        private readonly categoriesRepository: Repository<CategoryEntity>,
+        @InjectRepository(ProductCategoryEntity)
+        private readonly productCategoriesRepository: Repository<ProductCategoryEntity>,
         private readonly logger: LoggerService,
     ) {}
 
@@ -23,17 +29,23 @@ export class CategoriesService {
 
         try {
             const slug = autoGenerateSlug(name);
-            const newCategory = this.categoriesRepository.create({
+            const newCategory = this.productCategoriesRepository.create({
                 name,
                 slug,
             });
 
-            await this.categoriesRepository.save(newCategory);
+            await this.productCategoriesRepository.save(newCategory);
 
             this.logger.log({ message: 'Category created', id: newCategory.id, name }, this.context);
             return newCategory;
-        } catch (error: any) {
-            if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const err = error as any;
+
+            if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
                 this.logger.warn({ message: 'Category creation failed: Duplicate', name }, this.context);
                 throw new RpcException({
                     statusCode: HttpStatus.CONFLICT,
@@ -42,7 +54,10 @@ export class CategoriesService {
                 });
             }
 
-            this.logger.error({ message: 'Error creating category', error: error.message }, error.stack, this.context);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            const errorStack = err instanceof Error ? err.stack : undefined;
+
+            this.logger.error({ message: 'Error creating category', error: errorMessage }, errorStack, this.context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -52,18 +67,58 @@ export class CategoriesService {
         }
     }
 
-    async findAll(): Promise<ProductCategoryResponseDto[]> {
-        this.logger.log({ message: 'Initiating category find all' }, this.context);
+    async findAll(dto: PaginationDto): Promise<IPaginatedResponse<ProductCategoryResponseDto>> {
+        this.logger.log({ message: 'Initiating paginated category find all', dto }, this.context);
 
         try {
-            const categories = await this.categoriesRepository.find();
-            this.logger.log({ message: 'Categories found', count: categories.length }, this.context);
-            return categories;
-        } catch (error: any) {
-            this.logger.error({ message: 'Error finding categories', error: error.message }, error.stack, this.context);
+            const page = dto?.page ?? 1;
+            const limit = dto?.limit ?? 10;
+            const order = dto?.order ?? 'ASC';
+
+            const skip = (page - 1) * limit;
+            const whereCondition = dto?.search ? { name: ILike(`%${dto.search}%`) } : {};
+
+            const [categories, totalItems] = await this.productCategoriesRepository.findAndCount({
+                where: whereCondition,
+                order: { name: order },
+                skip: skip,
+                take: limit,
+            });
+
+            const totalPages = Math.ceil(totalItems / limit);
+            const result: IPaginatedResponse<ProductCategoryResponseDto> = {
+                data: categories,
+                meta: {
+                    page,
+                    limit,
+                    totalItems,
+                    totalPages,
+                },
+            };
+
+            this.logger.log(
+                {
+                    message: 'Categories found',
+                    count: categories.length,
+                    totalItems,
+                },
+                this.context,
+            );
+
+            return result;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error({ message: 'Error finding categories', error: errorMessage }, errorStack, this.context);
+
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'Failed to find categories',
+                message: 'Failed to retrieve categories',
                 error: 'Internal Server Error',
             });
         }
@@ -73,7 +128,7 @@ export class CategoriesService {
         this.logger.log({ message: 'Initiating category find by id', id }, this.context);
 
         try {
-            const category = await this.categoriesRepository.findOneBy({ id });
+            const category = await this.productCategoriesRepository.findOneBy({ id });
 
             if (!category) {
                 this.logger.warn({ message: 'Category not found', id }, this.context);
@@ -124,7 +179,7 @@ export class CategoriesService {
         this.logger.log({ message: 'Initiating category update', id }, this.context);
 
         try {
-            const category = await this.categoriesRepository.findOneBy({ id });
+            const category = await this.productCategoriesRepository.findOneBy({ id });
             if (!category) {
                 this.logger.warn({ message: 'Category not found', id }, this.context);
                 throw new RpcException({
@@ -138,7 +193,7 @@ export class CategoriesService {
                 category.name = dto.name;
                 category.slug = autoGenerateSlug(dto.name);
 
-                await this.categoriesRepository.save(category);
+                await this.productCategoriesRepository.save(category);
             }
 
             this.logger.log({ message: 'Category updated', id: category.id, name: category.name }, this.context);
@@ -184,7 +239,7 @@ export class CategoriesService {
         this.logger.log({ message: 'Initiating category removal', id }, this.context);
 
         try {
-            const category = await this.categoriesRepository.findOneBy({ id });
+            const category = await this.productCategoriesRepository.findOneBy({ id });
 
             if (!category) {
                 this.logger.warn({ message: 'Category not found', id }, this.context);
@@ -195,7 +250,7 @@ export class CategoriesService {
                 });
             }
 
-            await this.categoriesRepository.remove(category);
+            await this.productCategoriesRepository.remove(category);
 
             this.logger.log({ message: 'Category removed', id: category.id, name: category.name }, this.context);
             return { success: true };

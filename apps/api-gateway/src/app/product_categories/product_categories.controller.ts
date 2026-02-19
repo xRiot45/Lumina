@@ -2,11 +2,24 @@ import { Roles } from '@lumina/shared-common';
 import {
     BaseResponseDto,
     CreateProductCategoryDto,
+    PaginationDto,
     ProductCategoryResponseDto,
     UpdateProductCategoryDto,
 } from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ProductCategoriesService } from './product_categories.service';
@@ -18,10 +31,9 @@ export class ProductCategoriesController {
 
     @Post()
     @Roles(UserRole.ADMIN)
-    async create(
-        @Body() createProductCategoryDto: CreateProductCategoryDto,
-    ): Promise<BaseResponseDto<ProductCategoryResponseDto>> {
-        const result = await this.productCategoriesService.create(createProductCategoryDto);
+    @HttpCode(HttpStatus.CREATED)
+    async create(@Body() dto: CreateProductCategoryDto): Promise<BaseResponseDto<ProductCategoryResponseDto>> {
+        const result = await this.productCategoriesService.create(dto);
         return {
             success: true,
             statusCode: HttpStatus.CREATED,
@@ -33,19 +45,22 @@ export class ProductCategoriesController {
 
     @Get()
     @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
-    async findAll(): Promise<BaseResponseDto<ProductCategoryResponseDto[]>> {
-        const result = await this.productCategoriesService.findAll();
+    @HttpCode(HttpStatus.OK)
+    async findAll(@Query() query: PaginationDto): Promise<BaseResponseDto<ProductCategoryResponseDto[]>> {
+        const result = await this.productCategoriesService.findAll(query);
         return {
             success: true,
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
-            message: 'Product categories found successfully',
-            data: result,
+            message: 'Product categories retrieved successfully',
+            data: result.data,
+            meta: result.meta,
         };
     }
 
     @Get(':id')
     @Roles(UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
     async findById(@Param('id') id: string): Promise<BaseResponseDto<ProductCategoryResponseDto>> {
         const result = await this.productCategoriesService.findById(id);
         return {
@@ -59,8 +74,9 @@ export class ProductCategoriesController {
 
     @Put(':id')
     @Roles(UserRole.ADMIN)
-    async update(@Param('id') id: string, @Body() updateProductCategoryDto: UpdateProductCategoryDto) {
-        const result = await this.productCategoriesService.update(id, updateProductCategoryDto);
+    @HttpCode(HttpStatus.OK)
+    async update(@Param('id') id: string, @Body() dto: UpdateProductCategoryDto) {
+        const result = await this.productCategoriesService.update(id, dto);
         return {
             success: true,
             statusCode: HttpStatus.OK,
@@ -72,6 +88,7 @@ export class ProductCategoriesController {
 
     @Delete(':id')
     @Roles(UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
     async remove(@Param('id') id: string): Promise<BaseResponseDto> {
         await this.productCategoriesService.remove(id);
         return {

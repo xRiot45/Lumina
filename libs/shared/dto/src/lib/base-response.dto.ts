@@ -1,3 +1,4 @@
+import type { IPaginationMeta } from '@lumina/shared-interfaces';
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
@@ -19,6 +20,10 @@ export class BaseResponseDto<T = void> {
     @ApiProperty({ example: 'Operation successful' })
     @Expose()
     message?: string;
+
+    @ApiProperty({ required: false })
+    @Expose()
+    meta?: IPaginationMeta;
 
     @ApiProperty({ example: null })
     @Expose()

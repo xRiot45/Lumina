@@ -1,5 +1,9 @@
-import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
-import { IDeleteProductCategoryPayload, IUpdateProductCategoryPayload } from '@lumina/shared-interfaces';
+import { CreateProductCategoryDto, PaginationDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
+import {
+    IDeleteProductCategoryPayload,
+    IPaginatedResponse,
+    IUpdateProductCategoryPayload,
+} from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -61,14 +65,14 @@ export class ProductCategoriesService {
         }
     }
 
-    async findAll(): Promise<ProductCategoryResponseDto[]> {
+    async findAll(query: PaginationDto): Promise<IPaginatedResponse<ProductCategoryResponseDto>> {
         this.logger.log(`[GATEWAY] Incoming find all request`, this.context);
 
         try {
-            const response: ProductCategoryResponseDto[] = await firstValueFrom(
-                this.productsClient.send({ cmd: 'find_all_product_categories' }, {}),
+            const response = await firstValueFrom(
+                this.productsClient.send({ cmd: 'find_all_product_categories' }, { query }),
             );
-            return mapToDto(ProductCategoryResponseDto, response);
+            return response;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
 
