@@ -1,4 +1,5 @@
 import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
+import type { IUpdateProductCategoryPayload } from '@lumina/shared-interfaces';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CategoriesService } from './categories.service';
@@ -20,5 +21,10 @@ export class CategoriesController {
     @MessagePattern({ cmd: 'find_product_category_by_id' })
     async findById(@Payload() id: string): Promise<ProductCategoryResponseDto> {
         return await this.categoriesService.findById(id);
+    }
+
+    @MessagePattern({ cmd: 'update_product_category' })
+    async update(@Payload() payload: IUpdateProductCategoryPayload): Promise<ProductCategoryResponseDto> {
+        return await this.categoriesService.update(payload?.id, payload?.data);
     }
 }

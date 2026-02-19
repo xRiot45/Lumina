@@ -1,4 +1,4 @@
-import { CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
+import { CreateProductCategoryDto, ProductCategoryResponseDto, UpdateProductCategoryDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { autoGenerateSlug } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
@@ -115,6 +115,66 @@ export class CategoriesService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'Failed to find category',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async update(id: string, dto: UpdateProductCategoryDto): Promise<ProductCategoryResponseDto> {
+        this.logger.log({ message: 'Initiating category update', id }, this.context);
+
+        try {
+            const category = await this.categoriesRepository.findOneBy({ id });
+            if (!category) {
+                this.logger.warn({ message: 'Category not found', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Category not found',
+                    error: 'Not Found',
+                });
+            }
+
+            if (category.name !== dto.name) {
+                category.name = dto.name;
+                category.slug = autoGenerateSlug(dto.name);
+
+                await this.categoriesRepository.save(category);
+            }
+
+            this.logger.log({ message: 'Category updated', id: category.id, name: category.name }, this.context);
+            return category;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const err = error as any;
+            if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+                this.logger.warn(
+                    { message: 'Update failed: Category name already exists', id, name: dto.name },
+                    this.context,
+                );
+                throw new RpcException({
+                    statusCode: HttpStatus.CONFLICT,
+                    message: 'Category with this name or slug already exists',
+                    error: 'Conflict',
+                });
+            }
+
+            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('uuid'))) {
+                this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: 'Invalid category ID format',
+                    error: 'Bad Request',
+                });
+            }
+
+            this.logger.error({ message: 'Error updating category', error: err.message }, err.stack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to update category',
                 error: 'Internal Server Error',
             });
         }

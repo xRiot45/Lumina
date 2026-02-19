@@ -1,7 +1,12 @@
 import { Roles } from '@lumina/shared-common';
-import { BaseResponseDto, CreateProductCategoryDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
+import {
+    BaseResponseDto,
+    CreateProductCategoryDto,
+    ProductCategoryResponseDto,
+    UpdateProductCategoryDto,
+} from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
-import { Body, Controller, Get, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ProductCategoriesService } from './product_categories.service';
@@ -40,7 +45,7 @@ export class ProductCategoriesController {
     }
 
     @Get(':id')
-    @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+    @Roles(UserRole.ADMIN)
     async findById(@Param('id') id: string): Promise<BaseResponseDto<ProductCategoryResponseDto>> {
         const result = await this.productCategoriesService.findById(id);
         return {
@@ -48,6 +53,19 @@ export class ProductCategoriesController {
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
             message: 'Product category found successfully',
+            data: result,
+        };
+    }
+
+    @Put(':id')
+    @Roles(UserRole.ADMIN)
+    async update(@Param('id') id: string, @Body() updateProductCategoryDto: UpdateProductCategoryDto) {
+        const result = await this.productCategoriesService.update(id, updateProductCategoryDto);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product category updated successfully',
             data: result,
         };
     }
