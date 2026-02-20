@@ -1,7 +1,7 @@
 import { LoggerModule } from '@lumina/shared-logger';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductCategoryEntity } from './entities/product_category.entity';
+import { ProductCategoryEntity } from 'src/core/database/entities/product_category.entity';
 import { ProductCategoriesController } from './product_categories.controller';
 import { ProductCategoriesService } from './product_categories.service';
 
