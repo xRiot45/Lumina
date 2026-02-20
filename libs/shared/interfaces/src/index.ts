@@ -6,10 +6,14 @@ export * from './lib/auth/register-user.interface';
 export * from './lib/users/user.interface';
 
 // Products
+export * from './lib/products/products/create-product.interface';
+export * from './lib/products/products/product.interface';
+
+// Product Categories
 export * from './lib/products/product_categories/create-product-category.interface';
 export * from './lib/products/product_categories/delete-product-category.inteface';
 export * from './lib/products/product_categories/find-product-category-by-id.interface';
-export * from './lib/products/product_categories/product-categories.interface';
+export * from './lib/products/product_categories/product-category.interface';
 export * from './lib/products/product_categories/update-product-category.interface';
 
 // Enums

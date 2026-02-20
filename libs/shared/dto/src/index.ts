@@ -5,6 +5,10 @@ export * from './lib/auth/login.dto';
 export * from './lib/auth/register.dto';
 
 // Products DTO
+export * from './lib/products/products/create-product.dto';
+export * from './lib/products/products/product-response.dto';
+
+// Products Categories DTO
 export * from './lib/products/product_categories/create-product-category.dto';
 export * from './lib/products/product_categories/product-category-response.dto';
 export * from './lib/products/product_categories/update-product-category.dto';
