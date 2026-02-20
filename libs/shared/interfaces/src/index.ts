@@ -16,6 +16,9 @@ export * from './lib/products/product_categories/find-product-category-by-id.int
 export * from './lib/products/product_categories/product-category.interface';
 export * from './lib/products/product_categories/update-product-category.interface';
 
+// Product Variants
+export * from './lib/products/product_variants/product-variant.interface';
+
 // Enums
 export * from './lib/enums/user-role.enum';
 

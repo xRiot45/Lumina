@@ -3,7 +3,6 @@ export interface IProductVariant {
     sku: string;
     price: number;
     stock: number;
-    productId?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }
