@@ -30,6 +30,20 @@ export class ProductEntity extends BaseEntity {
     })
     basePrice!: number;
 
+    @Column({
+        type: 'varchar',
+        nullable: false,
+        length: 255,
+    })
+    description!: string;
+
+    @Column({
+        type: 'varchar',
+        nullable: false,
+        length: 150,
+    })
+    image!: string;
+
     // --- Relations ---
 
     @ManyToOne(() => ProductCategoryEntity, (category) => category.products, {
