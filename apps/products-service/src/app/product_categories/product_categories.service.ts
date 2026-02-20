@@ -11,7 +11,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
-import { ProductCategoryEntity } from './entities/product_category.entity';
+import { ProductCategoryEntity } from '../../core/database/entities/product_category.entity';
 
 @Injectable()
 export class ProductCategoriesService {

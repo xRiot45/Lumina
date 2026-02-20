@@ -4,7 +4,7 @@ import { ProductEntity } from './product.entity';
 
 @Entity('product_variants')
 export class ProductVariantEntity extends BaseEntity {
-    @Index()
+    @Index('IDX_VARIANT_SKU')
     @Column({
         type: 'varchar',
         length: 100,

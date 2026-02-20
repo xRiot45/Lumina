@@ -1,5 +1,5 @@
 import { IProduct } from '@lumina/shared-interfaces';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { ProductCategoryResponseDto } from '../product_categories/product-category-response.dto';
 import { ProductVariantResponseDto } from '../product_variants/product-variant-response.dto';
 
@@ -23,9 +23,11 @@ export class ProductResponseDto implements IProduct {
     image!: string;
 
     @Expose()
+    @Type(() => ProductCategoryResponseDto)
     category!: ProductCategoryResponseDto;
 
     @Expose()
+    @Type(() => ProductVariantResponseDto)
     variants!: ProductVariantResponseDto[];
 
     @Expose()

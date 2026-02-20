@@ -12,7 +12,7 @@ export class ProductEntity extends BaseEntity {
     })
     name!: string;
 
-    @Index()
+    @Index('IDX_PRODUCT_SLUG')
     @Column({
         type: 'varchar',
         length: 255,

@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app/app.module';
 
@@ -32,6 +33,8 @@ async function bootstrap() {
     );
 
     app.useGlobalFilters(new GlobalExceptionFilter());
+    app.use(json({ limit: '5mb' }));
+    app.use(urlencoded({ extended: true, limit: '10mb' }));
     if (env === 'production') {
         app.enableCors({
             origin: process.env.ALLOWED_ORIGINS?.split(',') || 'https://lumina.com',
