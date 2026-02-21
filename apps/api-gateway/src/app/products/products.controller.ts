@@ -75,7 +75,7 @@ export class ProductsController {
         };
     }
 
-    @Get(':slug')
+    @Get('slug/:slug')
     @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
     @HttpCode(HttpStatus.OK)
     async findBySlug(@Param('slug') slug: string): Promise<BaseResponseDto<ProductResponseDto>> {
@@ -84,7 +84,21 @@ export class ProductsController {
             success: true,
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
-            message: 'Product found successfully',
+            message: 'Product found by slug successfully',
+            data: result,
+        };
+    }
+
+    @Get(':productId')
+    @Roles(UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
+    async findById(@Param('productId') productId: string): Promise<BaseResponseDto<ProductResponseDto>> {
+        const result = await this.productsService.findById(productId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product found by id successfully',
             data: result,
         };
     }

@@ -111,8 +111,58 @@ export class ProductsService {
         this.logger.log(`[GATEWAY] Incoming find by slug request`, this.context);
 
         try {
-            const response = await firstValueFrom(this.productsClient.send({ cmd: 'find_product_by_slug' }, slug));
-            return response;
+            const response = await firstValueFrom(
+                this.productsClient.send({ cmd: 'find_product_by_slug' }, { slug: slug }),
+            );
+            return mapToDto(ProductResponseDto, response);
+        } catch (error) {
+            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async findById(productId: string): Promise<ProductResponseDto> {
+        this.logger.log(`[GATEWAY] Incoming find by id request`, this.context);
+
+        try {
+            const response = await firstValueFrom(
+                this.productsClient.send({ cmd: 'find_product_by_id' }, { id: productId }),
+            );
+            return mapToDto(ProductResponseDto, response);
         } catch (error) {
             this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
 

@@ -7,6 +7,8 @@ export * from './lib/users/user.interface';
 
 // Products
 export * from './lib/products/products/create-product.interface';
+export * from './lib/products/products/find-product-by-id.interface';
+export * from './lib/products/products/find-product-by-slug.interface';
 export * from './lib/products/products/product.interface';
 
 // Product Categories

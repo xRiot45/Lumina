@@ -181,7 +181,7 @@ export class ProductsService {
 
         try {
             const product = await this.productRepository.findOne({
-                where: { slug },
+                where: { slug: slug },
                 relations: ['category', 'variants'],
             });
 
@@ -195,6 +195,48 @@ export class ProductsService {
             }
 
             this.logger.log({ message: 'Product found', slug: product.slug, name: product.name }, this.context);
+            return product;
+        } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Failed to find product by slug', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while finding the product',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async findById(id: string): Promise<ProductResponseDto> {
+        this.logger.log({ message: 'Initiating product find by id', id }, this.context);
+
+        try {
+            const product = await this.productRepository.findOne({
+                where: { id: id },
+                relations: ['category', 'variants'],
+            });
+
+            if (!product) {
+                this.logger.warn({ message: 'Product not found', id }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Product not found',
+                    error: 'Not Found',
+                });
+            }
+
+            this.logger.log({ message: 'Product found', id: product.id, name: product.name }, this.context);
             return product;
         } catch (error) {
             if (error instanceof RpcException) {
