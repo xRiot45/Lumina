@@ -70,7 +70,7 @@ export class ProductCategoriesService {
 
         try {
             const response = await firstValueFrom(
-                this.productsClient.send({ cmd: 'find_all_product_categories' }, { query }),
+                this.productsClient.send({ cmd: 'find_all_product_categories' }, query),
             );
             return response;
         } catch (error: unknown) {
