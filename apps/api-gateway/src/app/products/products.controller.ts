@@ -9,6 +9,7 @@ import {
     Get,
     HttpCode,
     HttpStatus,
+    Param,
     Post,
     Query,
     UploadedFile,
@@ -71,6 +72,20 @@ export class ProductsController {
             message: 'Products retrieved successfully',
             data: result.data,
             meta: result.meta,
+        };
+    }
+
+    @Get(':slug')
+    @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async findBySlug(@Param('slug') slug: string): Promise<BaseResponseDto<ProductResponseDto>> {
+        const result = await this.productsService.findBySlug(slug);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product found successfully',
+            data: result,
         };
     }
 }

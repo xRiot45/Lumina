@@ -17,4 +17,9 @@ export class ProductsController {
     async findAll(@Payload() payload: PaginationDto): Promise<IPaginatedResponse<ProductResponseDto>> {
         return await this.productsService.findAll(payload);
     }
+
+    @MessagePattern({ cmd: 'find_product_by_slug' })
+    async findBySlug(@Payload() payload: string): Promise<ProductResponseDto> {
+        return await this.productsService.findBySlug(payload);
+    }
 }
