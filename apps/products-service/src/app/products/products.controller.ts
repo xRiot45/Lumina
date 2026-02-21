@@ -1,4 +1,4 @@
-import { CreateProductDto, PaginationDto, ProductCategoryResponseDto, ProductResponseDto } from '@lumina/shared-dto';
+import { CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
 import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
@@ -14,7 +14,7 @@ export class ProductsController {
     }
 
     @MessagePattern({ cmd: 'find_all_products' })
-    async findAll(@Payload() payload: PaginationDto): Promise<IPaginatedResponse<ProductCategoryResponseDto>> {
+    async findAll(@Payload() payload: PaginationDto): Promise<IPaginatedResponse<ProductResponseDto>> {
         return await this.productsService.findAll(payload);
     }
 }
