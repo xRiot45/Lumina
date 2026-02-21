@@ -1,14 +1,14 @@
-import { CreateProductDto, ProductResponseDto } from '@lumina/shared-dto';
+import { CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
+import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { autoGenerateSlug, isDatabaseError } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ILike, Repository } from 'typeorm';
 import { ProductEntity } from '../../core/database/entities/product.entity';
 import { ProductCategoryEntity } from '../../core/database/entities/product_category.entity';
 import { ProductVariantEntity } from '../../core/database/entities/product_variant.entity';
-
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProductsService {
@@ -117,6 +117,60 @@ export class ProductsService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while creating the product',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async findAll(dto: PaginationDto): Promise<IPaginatedResponse<ProductResponseDto>> {
+        this.logger.log({ message: 'Initiating product find all', dto }, this.context);
+
+        try {
+            const page = dto?.page ?? 1;
+            const limit = dto?.limit ?? 10;
+            const order = dto?.order ?? 'ASC';
+
+            const skip = (page - 1) * limit;
+            const whereCondition = dto?.search ? { name: ILike(`%${dto.search}%`) } : {};
+
+            const [products, totalItems] = await this.productRepository.findAndCount({
+                where: whereCondition,
+                order: { name: order },
+                skip: skip,
+                take: limit,
+                relations: ['category', 'variants'],
+            });
+
+            const totalPages = Math.ceil(totalItems / limit);
+            const result: IPaginatedResponse<ProductResponseDto> = {
+                data: products,
+                meta: {
+                    page,
+                    limit,
+                    totalItems,
+                    totalPages,
+                },
+            };
+
+            this.logger.log({ message: 'Product find all successful', result }, this.context);
+            return result;
+        } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Failed to find all products', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while finding all products',
                 error: 'Internal Server Error',
             });
         }

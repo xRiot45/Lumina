@@ -1,14 +1,16 @@
 import { Roles } from '@lumina/shared-common';
-import { BaseResponseDto, CreateProductDto, ProductResponseDto } from '@lumina/shared-dto';
+import { BaseResponseDto, CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
 import { createStorageConfig, deleteFile, fileFilter } from '@lumina/shared-utils';
 import {
     BadRequestException,
     Body,
     Controller,
+    Get,
     HttpCode,
     HttpStatus,
     Post,
+    Query,
     UploadedFile,
     UseGuards,
     UseInterceptors,
@@ -55,5 +57,20 @@ export class ProductsController {
             await deleteFile(dto.image);
             throw error;
         }
+    }
+
+    @Get()
+    @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async findAll(@Query() query: PaginationDto): Promise<BaseResponseDto<ProductResponseDto[]>> {
+        const result = await this.productsService.findAll(query);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Products retrieved successfully',
+            data: result.data,
+            meta: result.meta,
+        };
     }
 }
