@@ -1,5 +1,6 @@
 import { CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
 import type {
+    IDeleteProductPayload,
     IFindProductByIdPayload,
     IFindProductBySlugPayload,
     IPaginatedResponse,
@@ -36,5 +37,10 @@ export class ProductsController {
     @MessagePattern({ cmd: 'update_product' })
     async update(@Payload() payload: IUpdateProductPayload): Promise<ProductResponseDto> {
         return await this.productsService.update(payload?.id, payload?.data);
+    }
+
+    @MessagePattern({ cmd: 'delete_product' })
+    async remove(@Payload() payload: IDeleteProductPayload): Promise<{ success: boolean }> {
+        return await this.productsService.remove(payload.id);
     }
 }

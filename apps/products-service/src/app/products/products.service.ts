@@ -332,4 +332,48 @@ export class ProductsService {
             });
         }
     }
+
+    async remove(productId: string): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Initiating product deletion', productId }, this.context);
+
+        try {
+            const product = await this.productRepository.findOne({
+                where: { id: productId },
+                relations: ['variants'],
+            });
+
+            if (!product) {
+                this.logger.warn({ message: 'Product deletion failed: Product not found', productId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Product not found',
+                    error: 'Not Found',
+                });
+            }
+
+            if (product.variants && product.variants.length > 0) {
+                await this.productVariantRepository.remove(product.variants);
+            }
+
+            await this.productRepository.remove(product);
+
+            this.logger.log({ message: 'Product and its variants deleted successfully', productId }, this.context);
+            return { success: true };
+        } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error({ message: 'Failed to delete product', error: errorMessage }, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while deleting the product',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

@@ -12,13 +12,13 @@ import {
     BadRequestException,
     Body,
     Controller,
+    Delete,
     Get,
     HttpCode,
     HttpStatus,
     Param,
     Patch,
     Post,
-    Put,
     Query,
     UploadedFile,
     UseGuards,
@@ -133,6 +133,19 @@ export class ProductsController {
             timestamp: new Date(),
             message: 'Product updated successfully',
             data: result,
+        };
+    }
+
+    @Delete(':productId')
+    @Roles(UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
+    async remove(@Param('productId') productId: string): Promise<BaseResponseDto> {
+        await this.productsService.remove(productId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product deleted successfully',
         };
     }
 }
