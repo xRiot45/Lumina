@@ -7,9 +7,8 @@ import {
     UpdateProductDto,
 } from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
-import { createStorageConfig, deleteFile, fileFilter } from '@lumina/shared-utils';
+import { createStorageConfig, fileFilter } from '@lumina/shared-utils';
 import {
-    BadRequestException,
     Body,
     Controller,
     Delete,
@@ -48,24 +47,15 @@ export class ProductsController {
         @Body() dto: CreateProductDto,
         @UploadedFile() file: Express.Multer.File,
     ): Promise<BaseResponseDto<ProductResponseDto>> {
-        if (!file) {
-            throw new BadRequestException('Product image is required');
-        }
+        const result = await this.productsService.create(dto, file);
 
-        dto.image = `products/${file.filename}`;
-        try {
-            const result = await this.productsService.create(dto);
-            return {
-                success: true,
-                statusCode: HttpStatus.CREATED,
-                timestamp: new Date(),
-                message: 'Product created successfully',
-                data: result,
-            };
-        } catch (error: unknown) {
-            await deleteFile(dto.image);
-            throw error;
-        }
+        return {
+            success: true,
+            statusCode: HttpStatus.CREATED,
+            timestamp: new Date(),
+            message: 'Product created successfully',
+            data: result,
+        };
     }
 
     @Get()

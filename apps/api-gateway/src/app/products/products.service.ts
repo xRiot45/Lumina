@@ -15,13 +15,28 @@ export class ProductsService {
         private readonly logger: LoggerService,
     ) {}
 
-    async create(dto: CreateProductDto): Promise<ProductResponseDto> {
-        this.logger.log({ message: `[Gateway] Incoming create request`, dto }, this.context);
+    async create(dto: CreateProductDto, file: Express.Multer.File): Promise<ProductResponseDto> {
+        this.logger.log({ message: `[Gateway] Incoming create request`, name: dto.name }, this.context);
 
+        if (!file) {
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: 'Product image is required',
+                    error: 'Bad Request',
+                },
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        dto.image = `products/${file.filename}`;
         try {
             const response = await firstValueFrom(this.productsClient.send({ cmd: 'create_product' }, dto));
             return mapToDto(ProductResponseDto, response);
         } catch (error: unknown) {
+            this.logger.warn(`[Gateway Service] Creation failed. Rolling back image: ${dto.image}`, this.context);
+            await deleteFile(dto.image);
+
             this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
 
             if (isMicroserviceError(error)) {
