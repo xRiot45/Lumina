@@ -1,5 +1,10 @@
 import { CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
-import type { IFindProductByIdPayload, IFindProductBySlugPayload, IPaginatedResponse } from '@lumina/shared-interfaces';
+import type {
+    IFindProductByIdPayload,
+    IFindProductBySlugPayload,
+    IPaginatedResponse,
+    IUpdateProductPayload,
+} from '@lumina/shared-interfaces';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProductsService } from './products.service';
@@ -26,5 +31,10 @@ export class ProductsController {
     @MessagePattern({ cmd: 'find_product_by_id' })
     async findById(@Payload() payload: IFindProductByIdPayload): Promise<ProductResponseDto> {
         return await this.productsService.findById(payload?.id);
+    }
+
+    @MessagePattern({ cmd: 'update_product' })
+    async update(@Payload() payload: IUpdateProductPayload): Promise<ProductResponseDto> {
+        return await this.productsService.update(payload?.id, payload?.data);
     }
 }

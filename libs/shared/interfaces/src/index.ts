@@ -10,6 +10,7 @@ export * from './lib/products/products/create-product.interface';
 export * from './lib/products/products/find-product-by-id.interface';
 export * from './lib/products/products/find-product-by-slug.interface';
 export * from './lib/products/products/product.interface';
+export * from './lib/products/products/update-product.interface';
 
 // Product Categories
 export * from './lib/products/product_categories/create-product-category.interface';

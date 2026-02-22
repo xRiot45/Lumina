@@ -1,5 +1,11 @@
 import { Roles } from '@lumina/shared-common';
-import { BaseResponseDto, CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
+import {
+    BaseResponseDto,
+    CreateProductDto,
+    PaginationDto,
+    ProductResponseDto,
+    UpdateProductDto,
+} from '@lumina/shared-dto';
 import { UserRole } from '@lumina/shared-interfaces';
 import { createStorageConfig, deleteFile, fileFilter } from '@lumina/shared-utils';
 import {
@@ -10,7 +16,9 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    Patch,
     Post,
+    Put,
     Query,
     UploadedFile,
     UseGuards,
@@ -99,6 +107,31 @@ export class ProductsController {
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
             message: 'Product found by id successfully',
+            data: result,
+        };
+    }
+
+    @Patch(':productId')
+    @Roles(UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
+    @UseInterceptors(
+        FileInterceptor('image', {
+            storage: createStorageConfig('products'),
+            fileFilter: fileFilter,
+            limits: { fileSize: 5 * 1024 * 1024 },
+        }),
+    )
+    async update(
+        @Body() dto: UpdateProductDto,
+        @Param('productId') productId: string,
+        @UploadedFile() file?: Express.Multer.File,
+    ): Promise<BaseResponseDto<ProductResponseDto>> {
+        const result = await this.productsService.update(productId, dto, file);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Product updated successfully',
             data: result,
         };
     }

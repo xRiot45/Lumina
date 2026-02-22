@@ -1,4 +1,4 @@
-import { CreateProductDto, PaginationDto, ProductResponseDto } from '@lumina/shared-dto';
+import { CreateProductDto, PaginationDto, ProductResponseDto, UpdateProductDto } from '@lumina/shared-dto';
 import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { autoGenerateSlug, isDatabaseError } from '@lumina/shared-utils';
@@ -255,6 +255,79 @@ export class ProductsService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while finding the product',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async update(productId: string, dto: UpdateProductDto): Promise<ProductResponseDto> {
+        const { name, basePrice, description, image, categoryId, variants } = dto;
+        this.logger.log({ message: 'Initiating product update', dto }, this.context);
+
+        try {
+            const productCategory = await this.productCategoryRepository.findOneBy({ id: categoryId });
+            if (!productCategory) {
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Category not found',
+                    error: 'Not Found',
+                });
+            }
+
+            const product = await this.productRepository.findOne({
+                where: { id: productId },
+                relations: ['variants'],
+            });
+
+            if (!product) {
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Product not found',
+                    error: 'Not Found',
+                });
+            }
+
+            if (product.variants && product.variants.length > 0) {
+                await this.productVariantRepository.remove(product.variants);
+            }
+
+            const newVariants = variants.map((variant) => {
+                return this.productVariantRepository.create({
+                    sku: variant.sku,
+                    price: variant.price,
+                    stock: variant.stock,
+                });
+            });
+
+            if (product.name !== name) {
+                this.logger.log({ message: `Product name changed. Generating new slug for: ${name}` }, this.context);
+                product.name = name;
+                product.slug = autoGenerateSlug(name);
+            }
+
+            product.basePrice = basePrice;
+            product.description = description;
+            product.image = image;
+            product.category = productCategory;
+            product.variants = newVariants;
+
+            await this.productRepository.save(product);
+
+            this.logger.log({ message: 'Product updated successfully', productId }, this.context);
+            return product;
+        } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error({ message: 'Failed to update product', error: errorMessage }, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while updating the product',
                 error: 'Internal Server Error',
             });
         }
