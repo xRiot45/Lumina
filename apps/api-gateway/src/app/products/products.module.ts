@@ -12,8 +12,8 @@ import { ProductsService } from './products.service';
                 name: 'PRODUCTS_SERVICE',
                 transport: Transport.TCP,
                 options: {
-                    host: 'localhost',
-                    port: 3003,
+                    host: process.env.PRODUCTS_SERVICE_HOST,
+                    port: Number(process.env.PRODUCTS_SERVICE_PORT),
                 },
             },
         ]),

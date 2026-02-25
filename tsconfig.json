@@ -40,9 +40,6 @@
             "path": "./libs/shared/interfaces"
         },
         {
-            "path": "./apps/carts-service-e2e"
-        },
-        {
             "path": "./apps/carts-service"
         }
     ]

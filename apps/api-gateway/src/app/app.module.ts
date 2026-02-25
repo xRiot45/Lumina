@@ -13,27 +13,32 @@ import { ProductCategoriesModule } from './product_categories/product_categories
                 name: 'AUTH_SERVICE',
                 transport: Transport.TCP,
                 options: {
-                    host: 'localhost',
-                    // host: '0.0.0.0',
-                    port: 3001,
+                    host: process.env.AUTH_SERVICE_HOST,
+                    port: Number(process.env.AUTH_SERVICE_PORT),
                 },
             },
             {
                 name: 'USERS_SERVICE',
                 transport: Transport.TCP,
                 options: {
-                    host: 'localhost',
-                    // host: '0.0.0.0',
-                    port: 3002,
+                    host: process.env.USERS_SERVICE_HOST,
+                    port: Number(process.env.USERS_SERVICE_PORT),
                 },
             },
             {
                 name: 'PRODUCTS_SERVICE',
                 transport: Transport.TCP,
                 options: {
-                    host: 'localhost',
-                    // host: '0.0.0.0',
-                    port: 3003,
+                    host: process.env.PRODUCTS_SERVICE_HOST,
+                    port: Number(process.env.PRODUCTS_SERVICE_PORT),
+                },
+            },
+            {
+                name: 'CARTS_SERVICE',
+                transport: Transport.TCP,
+                options: {
+                    host: process.env.CARTS_SERVICE_HOST,
+                    port: Number(process.env.CARTS_SERVICE_PORT),
                 },
             },
         ]),
