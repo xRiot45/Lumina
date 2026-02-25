@@ -4,6 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { ProductCategoriesModule } from './product_categories/product_categories.module';
+import { CartsModule } from './carts/carts.module';
 
 @Global()
 @Module({
@@ -45,6 +46,7 @@ import { ProductCategoriesModule } from './product_categories/product_categories
         AuthModule,
         ProductsModule,
         ProductCategoriesModule,
+        CartsModule,
     ],
     providers: [ResponseInterceptor],
 })

@@ -20,6 +20,9 @@ export * from './lib/products/product_categories/find-product-category-by-id.int
 export * from './lib/products/product_categories/product-category.interface';
 export * from './lib/products/product_categories/update-product-category.interface';
 
+// Carts
+export * from './lib/carts/cart.interface';
+
 // Product Variants
 export * from './lib/products/product_variants/product-variant.interface';
 

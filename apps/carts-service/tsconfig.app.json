@@ -26,6 +26,15 @@
     "references": [
         {
             "path": "../../libs/shared/entities/tsconfig.lib.json"
+        },
+        {
+            "path": "../../libs/shared/logger/tsconfig.lib.json"
+        },
+        {
+            "path": "../../libs/shared/interfaces/tsconfig.lib.json"
+        },
+        {
+            "path": "../../libs/shared/dto/tsconfig.lib.json"
         }
     ]
 }

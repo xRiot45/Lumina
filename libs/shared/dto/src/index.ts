@@ -14,6 +14,9 @@ export * from './lib/products/product_categories/create-product-category.dto';
 export * from './lib/products/product_categories/product-category-response.dto';
 export * from './lib/products/product_categories/update-product-category.dto';
 
+// Carts DTO
+export * from './lib/carts/cart.dto';
+
 // Users DTO
 export * from './lib/users/user-response.dto';
 
