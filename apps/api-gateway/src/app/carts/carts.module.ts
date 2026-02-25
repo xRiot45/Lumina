@@ -16,6 +16,14 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
                     port: Number(process.env.CARTS_SERVICE_PORT),
                 },
             },
+            {
+                name: 'PRODUCTS_SERVICE',
+                transport: Transport.TCP,
+                options: {
+                    host: process.env.PRODUCTS_SERVICE_HOST,
+                    port: Number(process.env.PRODUCTS_SERVICE_PORT),
+                },
+            },
         ]),
     ],
     controllers: [CartsController],

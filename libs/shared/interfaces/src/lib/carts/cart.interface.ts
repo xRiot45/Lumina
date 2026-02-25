@@ -1,6 +1,4 @@
-// ==========================================
-// REQUEST INTERFACES (From Frontend To Gateway)
-// ==========================================
+import { IPaginationMeta, IPaginationQuery } from '../pagination/paginated-response.interface';
 
 export interface IAddToCartRequest {
     productId: string;
@@ -12,19 +10,11 @@ export interface IUpdateCartItemRequest {
     quantity: number;
 }
 
-// ==========================================
-// PAYLOAD INTERFACES (From Gateway To Microservice)
-// ==========================================
-
 export interface ICartActionPayload {
     userId: string;
-    itemId?: string; // Digunakan untuk Update/Delete spesifik item
+    itemId?: string;
     data?: IAddToCartRequest | IUpdateCartItemRequest;
 }
-
-// ==========================================
-// RESPONSE INTERFACES (From Microservice To Gateway/Frontend)
-// ==========================================
 
 export interface ICartItemResponse {
     id: string;
@@ -42,4 +32,41 @@ export interface ICartResponse {
     items: ICartItemResponse[];
     createdAt?: Date;
     updatedAt?: Date;
+}
+
+export interface IEnrichedCartItemProduct {
+    id: string;
+    name: string;
+    slug: string;
+    image: string | null;
+    basePrice: number;
+}
+
+export interface IEnrichedCartItemVariant {
+    id: string;
+    sku: string;
+    price: number;
+    stock: number;
+}
+
+export interface IEnrichedCartItemResponse {
+    id: string;
+    quantity: number;
+    subTotal: number;
+    createdAt?: Date;
+    updatedAt?: Date;
+    product: IEnrichedCartItemProduct | null;
+    variant: IEnrichedCartItemVariant | null;
+}
+
+export interface IEnrichedCartResponse {
+    id: string;
+    userId: string;
+    items: IEnrichedCartItemResponse[];
+    meta?: IPaginationMeta;
+}
+
+export interface IGetCartPayload {
+    userId: string;
+    query: IPaginationQuery;
 }

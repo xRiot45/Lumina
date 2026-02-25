@@ -32,9 +32,6 @@
         },
         {
             "path": "../../libs/shared/interfaces/tsconfig.lib.json"
-        },
-        {
-            "path": "../../libs/shared/dto/tsconfig.lib.json"
         }
     ]
 }

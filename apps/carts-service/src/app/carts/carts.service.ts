@@ -1,5 +1,4 @@
-import { CartResponseDto } from '@lumina/shared-dto';
-import { IAddToCartRequest } from '@lumina/shared-interfaces';
+import { IAddToCartRequest, ICartItemResponse, IPaginatedResponse, IPaginationQuery } from '@lumina/shared-interfaces';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CartItemEntity } from '../../core/database/entities/cart-items.entity';
@@ -81,6 +80,69 @@ export class CartsService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while adding the item to the cart',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async getCart(userId: string, query: IPaginationQuery): Promise<IPaginatedResponse<ICartItemResponse>> {
+        this.logger.log({ message: 'Fetching cart for user', userId }, this.context);
+
+        try {
+            const page: number = Number(query?.page) || 1;
+            const limit: number = Number(query?.limit) || 10;
+            const skip: number = (page - 1) * limit;
+
+            const cart: CartEntity | null = await this.cartRepository.findOne({
+                where: { userId },
+            });
+
+            if (!cart) {
+                this.logger.log({ message: 'Cart not found, returning empty state', userId }, this.context);
+                return {
+                    data: [],
+                    meta: {
+                        page,
+                        limit,
+                        totalItems: 0,
+                        totalPages: 0,
+                    },
+                };
+            }
+
+            const [items, totalItems] = await this.cartItemRepository.findAndCount({
+                where: { cartId: cart.id },
+                skip: skip,
+                take: limit,
+                order: { createdAt: 'DESC' },
+            });
+
+            const totalPages: number = Math.ceil(totalItems / limit);
+            const result: IPaginatedResponse<ICartItemResponse> = {
+                data: items,
+                meta: {
+                    page,
+                    limit,
+                    totalItems,
+                    totalPages,
+                },
+            };
+
+            this.logger.log({ message: 'Cart fetched successfully', userId }, this.context);
+            return result;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error({ message: 'Failed to fetch cart', error: errorMessage }, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while fetching the cart',
                 error: 'Internal Server Error',
             });
         }

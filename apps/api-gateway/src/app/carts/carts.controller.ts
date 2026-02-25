@@ -1,11 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    HttpCode,
+    HttpStatus,
+    UseGuards,
+    Query,
+} from '@nestjs/common';
 import { CartsService } from './carts.service';
 import { CurrentUser, Roles } from '@lumina/shared-common';
 import type { IAuthenticatedUser } from '@lumina/shared-interfaces';
 import { UserRole } from '@lumina/shared-interfaces';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { AddToCartDto, BaseResponseDto, CartResponseDto } from '@lumina/shared-dto';
+import {
+    AddToCartDto,
+    BaseResponseDto,
+    CartResponseDto,
+    EnrichedCartItemResponseDto,
+    PaginationDto,
+} from '@lumina/shared-dto';
 
 @Controller('carts')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,6 +44,24 @@ export class CartsController {
             timestamp: new Date(),
             message: 'Product added to cart successfully',
             data: result,
+        };
+    }
+
+    @Get()
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async getCart(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Query() query: PaginationDto,
+    ): Promise<BaseResponseDto<EnrichedCartItemResponseDto[]>> {
+        const result = await this.cartsService.getCart(user?.id, query);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Carts retrieved successfully',
+            data: result.data,
+            meta: result.meta,
         };
     }
 }

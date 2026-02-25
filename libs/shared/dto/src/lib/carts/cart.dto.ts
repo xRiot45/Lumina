@@ -1,4 +1,12 @@
-import { IAddToCartRequest, ICartItemResponse, ICartResponse, IUpdateCartItemRequest } from '@lumina/shared-interfaces';
+import {
+    IAddToCartRequest,
+    ICartItemResponse,
+    ICartResponse,
+    IEnrichedCartItemProduct,
+    IEnrichedCartItemResponse,
+    IEnrichedCartItemVariant,
+    IUpdateCartItemRequest,
+} from '@lumina/shared-interfaces';
 import { IsInt, IsNotEmpty, IsUUID, Min } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
@@ -61,4 +69,60 @@ export class CartResponseDto implements ICartResponse {
 
     @Expose()
     updatedAt?: Date;
+}
+
+export class EnrichedCartItemProductDto implements IEnrichedCartItemProduct {
+    @Expose()
+    id!: string;
+
+    @Expose()
+    name!: string;
+
+    @Expose()
+    slug!: string;
+
+    @Expose()
+    image!: string | null;
+
+    @Expose()
+    basePrice!: number;
+}
+
+export class EnrichedCartItemVariantDto implements IEnrichedCartItemVariant {
+    @Expose()
+    id!: string;
+
+    @Expose()
+    sku!: string;
+
+    @Expose()
+    price!: number;
+
+    @Expose()
+    stock!: number;
+}
+
+export class EnrichedCartItemResponseDto implements IEnrichedCartItemResponse {
+    @Expose()
+    id!: string;
+
+    @Expose()
+    quantity!: number;
+
+    @Expose()
+    subTotal!: number;
+
+    @Expose()
+    createdAt?: Date;
+
+    @Expose()
+    updatedAt?: Date;
+
+    @Expose()
+    @Type(() => EnrichedCartItemProductDto)
+    product!: EnrichedCartItemProductDto | null;
+
+    @Expose()
+    @Type(() => EnrichedCartItemVariantDto)
+    variant!: EnrichedCartItemVariantDto | null;
 }
