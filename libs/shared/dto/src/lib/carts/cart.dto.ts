@@ -6,6 +6,7 @@ import {
     IEnrichedCartItemResponse,
     IEnrichedCartItemVariant,
     IUpdateCartItemRequest,
+    IUpdateCartItemResponse,
 } from '@lumina/shared-interfaces';
 import { IsInt, IsNotEmpty, IsUUID, Min } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
@@ -125,4 +126,9 @@ export class EnrichedCartItemResponseDto implements IEnrichedCartItemResponse {
     @Expose()
     @Type(() => EnrichedCartItemVariantDto)
     variant!: EnrichedCartItemVariantDto | null;
+}
+
+export class UpdateCartItemResponseDto implements IUpdateCartItemResponse {
+    @Expose()
+    success!: boolean;
 }

@@ -245,4 +245,49 @@ export class CartsService {
             });
         }
     }
+
+    async updateItemQuantity(userId: string, cartItemId: string, quantity: number): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Updating cart item quantity', userId, cartItemId, quantity }, this.context);
+
+        try {
+            const cartItem = await this.cartItemRepository.findOne({
+                where: { id: cartItemId },
+                relations: ['cart'],
+            });
+
+            if (!cartItem || cartItem.cart?.userId !== userId) {
+                this.logger.warn({ message: 'Cart Item not found or unauthorized', userId, cartItemId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Cart item not found',
+                    error: 'Not Found',
+                });
+            }
+
+            cartItem.quantity = quantity;
+            await this.cartItemRepository.save(cartItem);
+
+            this.logger.log({ message: 'Cart item quantity updated successfully', userId, cartItemId }, this.context);
+            return { success: true };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Failed to remove item from cart', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while removing the item from the cart',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

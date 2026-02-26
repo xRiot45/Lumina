@@ -6,6 +6,7 @@ import type {
     IDeleteItemFromCartPayload,
     IGetCartPayload,
     IPaginatedResponse,
+    IUpdateCartItemPayload,
 } from '@lumina/shared-interfaces';
 import { Controller } from '@nestjs/common';
 import { CartsService } from './carts.service';
@@ -33,5 +34,10 @@ export class CartsController {
     @MessagePattern({ cmd: 'delete_cart' })
     async deleteCart(@Payload() payload: IDeleteCartPayload): Promise<{ success: boolean }> {
         return await this.cartsService.deleteCart(payload.userId, payload.cartId);
+    }
+
+    @MessagePattern({ cmd: 'update_item_quantity' })
+    async updateItemQuantity(@Payload() payload: IUpdateCartItemPayload) {
+        return await this.cartsService.updateItemQuantity(payload.userId, payload.cartItemId, payload.quantity);
     }
 }

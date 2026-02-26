@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Param,
+    Delete,
+    HttpCode,
+    HttpStatus,
+    UseGuards,
+    Query,
+    Patch,
+} from '@nestjs/common';
 import { CartsService } from './carts.service';
 import { CurrentUser, Roles } from '@lumina/shared-common';
 import type { IAuthenticatedUser } from '@lumina/shared-interfaces';
@@ -11,6 +23,7 @@ import {
     CartResponseDto,
     EnrichedCartItemResponseDto,
     PaginationDto,
+    UpdateCartItemDto,
 } from '@lumina/shared-dto';
 
 @Controller('carts')
@@ -82,6 +95,23 @@ export class CartsController {
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
             message: 'Cart deleted successfully',
+        };
+    }
+
+    @Patch('items/:itemId')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async updateItemQuantity(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('itemId') itemId: string,
+        @Body() dto: UpdateCartItemDto,
+    ): Promise<BaseResponseDto> {
+        await this.cartsService.updateItemQuantity(user?.id, itemId, dto.quantity);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Cart item quantity updated successfully',
         };
     }
 }

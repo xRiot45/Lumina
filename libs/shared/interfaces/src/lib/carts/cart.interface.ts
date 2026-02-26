@@ -80,3 +80,13 @@ export interface IDeleteCartPayload {
     userId: string;
     cartId: string;
 }
+
+export interface IUpdateCartItemPayload {
+    userId: string;
+    cartItemId: string;
+    quantity: number;
+}
+
+export interface IUpdateCartItemResponse {
+    success: boolean;
+}
