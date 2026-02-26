@@ -2,6 +2,7 @@ import type {
     IAddToCartRequest,
     ICartActionPayload,
     ICartItemResponse,
+    IDeleteCartPayload,
     IDeleteItemFromCartPayload,
     IGetCartPayload,
     IPaginatedResponse,
@@ -27,5 +28,10 @@ export class CartsController {
     @MessagePattern({ cmd: 'delete_item_from_cart' })
     async deleteItemFromCart(@Payload() payload: IDeleteItemFromCartPayload): Promise<{ success: boolean }> {
         return await this.cartsService.deleteItemFromCart(payload.userId, payload.cartItemId);
+    }
+
+    @MessagePattern({ cmd: 'delete_cart' })
+    async deleteCart(@Payload() payload: IDeleteCartPayload): Promise<{ success: boolean }> {
+        return await this.cartsService.deleteCart(payload.userId, payload.cartId);
     }
 }

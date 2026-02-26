@@ -75,3 +75,8 @@ export interface IDeleteItemFromCartPayload {
     userId: string;
     cartItemId: string;
 }
+
+export interface IDeleteCartPayload {
+    userId: string;
+    cartId: string;
+}

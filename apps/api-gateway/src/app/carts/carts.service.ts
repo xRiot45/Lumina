@@ -245,4 +245,50 @@ export class CartsService {
             );
         }
     }
+
+    async deleteCart(userId: string, cartId: string): Promise<void> {
+        this.logger.log({ message: 'Deleting cart', userId, cartId }, this.context);
+
+        try {
+            const response = await firstValueFrom(this.cartsClient.send({ cmd: 'delete_cart' }, { userId, cartId }));
+            return response;
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
 }

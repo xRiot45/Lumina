@@ -68,4 +68,20 @@ export class CartsController {
             message: 'Cart item deleted successfully',
         };
     }
+
+    @Delete(':cartId')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async deleteCart(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('cartId') cartId: string,
+    ): Promise<BaseResponseDto> {
+        await this.cartsService.deleteCart(user?.id, cartId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Cart deleted successfully',
+        };
+    }
 }

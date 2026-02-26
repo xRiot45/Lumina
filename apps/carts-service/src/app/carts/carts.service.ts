@@ -202,4 +202,47 @@ export class CartsService {
             });
         }
     }
+
+    async deleteCart(userId: string, cartId: string): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Deleting cart', userId, cartId }, this.context);
+
+        try {
+            const cart = await this.cartRepository.findOne({
+                where: { id: cartId },
+            });
+
+            if (!cart || cart.userId !== userId) {
+                this.logger.warn({ message: 'Cart not found or unauthorized', userId, cartId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Cart not found',
+                    error: 'Not Found',
+                });
+            }
+
+            await this.cartRepository.delete(cartId);
+
+            this.logger.log({ message: 'Cart deleted successfully', userId, cartId }, this.context);
+            return { success: true };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Failed to remove item from cart', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while removing the item from the cart',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }
