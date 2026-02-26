@@ -1,16 +1,4 @@
-import {
-    Controller,
-    Get,
-    Post,
-    Body,
-    Patch,
-    Param,
-    Delete,
-    HttpCode,
-    HttpStatus,
-    UseGuards,
-    Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query } from '@nestjs/common';
 import { CartsService } from './carts.service';
 import { CurrentUser, Roles } from '@lumina/shared-common';
 import type { IAuthenticatedUser } from '@lumina/shared-interfaces';
@@ -62,6 +50,22 @@ export class CartsController {
             message: 'Carts retrieved successfully',
             data: result.data,
             meta: result.meta,
+        };
+    }
+
+    @Delete('items/:cartItemId')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async deleteItemFromCart(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('cartItemId') cartItemId: string,
+    ): Promise<BaseResponseDto> {
+        await this.cartsService.deleteItemFromCart(user?.id, cartItemId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Cart item deleted successfully',
         };
     }
 }

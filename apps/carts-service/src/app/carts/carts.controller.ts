@@ -2,6 +2,7 @@ import type {
     IAddToCartRequest,
     ICartActionPayload,
     ICartItemResponse,
+    IDeleteItemFromCartPayload,
     IGetCartPayload,
     IPaginatedResponse,
 } from '@lumina/shared-interfaces';
@@ -21,5 +22,10 @@ export class CartsController {
     @MessagePattern({ cmd: 'get_cart' })
     async getCart(@Payload() payload: IGetCartPayload): Promise<IPaginatedResponse<ICartItemResponse>> {
         return await this.cartsService.getCart(payload.userId, payload.query);
+    }
+
+    @MessagePattern({ cmd: 'delete_item_from_cart' })
+    async deleteItemFromCart(@Payload() payload: IDeleteItemFromCartPayload): Promise<{ success: boolean }> {
+        return await this.cartsService.deleteItemFromCart(payload.userId, payload.cartItemId);
     }
 }

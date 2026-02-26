@@ -70,3 +70,8 @@ export interface IGetCartPayload {
     userId: string;
     query: IPaginationQuery;
 }
+
+export interface IDeleteItemFromCartPayload {
+    userId: string;
+    cartItemId: string;
+}

@@ -147,4 +147,59 @@ export class CartsService {
             });
         }
     }
+
+    async deleteItemFromCart(userId: string, cartItemId: string): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Deleting cart item', userId, cartItemId }, this.context);
+
+        try {
+            const cartItem = await this.cartItemRepository.findOne({
+                where: { id: cartItemId },
+                relations: ['cart'],
+            });
+
+            if (!cartItem || cartItem.cart?.userId !== userId) {
+                this.logger.warn({ message: 'Cart Item not found or unauthorized', userId, cartItemId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Cart item not found',
+                    error: 'Not Found',
+                });
+            }
+
+            const cartId = cartItem.cart.id;
+
+            await this.cartItemRepository.delete(cartItemId);
+
+            const remainingItemsCount = await this.cartItemRepository.count({
+                where: { cartId: cartId },
+            });
+
+            if (remainingItemsCount === 0) {
+                this.logger.log({ message: 'Cart is empty, deleting parent cart', cartId }, this.context);
+                await this.cartRepository.delete(cartId);
+            }
+
+            this.logger.log({ message: 'Cart item deleted successfully', userId, cartItemId }, this.context);
+            return { success: true };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Failed to remove item from cart', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while removing the item from the cart',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }
