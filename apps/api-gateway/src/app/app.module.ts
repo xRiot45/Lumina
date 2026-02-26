@@ -42,6 +42,14 @@ import { CartsModule } from './carts/carts.module';
                     port: Number(process.env.CARTS_SERVICE_PORT),
                 },
             },
+            {
+                name: 'ORDERS_SERVICE',
+                transport: Transport.TCP,
+                options: {
+                    host: process.env.ORDERS_SERVICE_HOST,
+                    port: Number(process.env.ORDERS_SERVICE_PORT),
+                },
+            },
         ]),
         AuthModule,
         ProductsModule,

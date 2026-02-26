@@ -55,7 +55,8 @@
                 "apps/auth-service-e2e/**/*",
                 "apps/users-service-e2e/**/*",
                 "apps/products-service-e2e/**/*",
-                "apps/carts-service-e2e/**/*"
+                "apps/carts-service-e2e/**/*",
+                "apps/orders-service-e2e/**/*"
             ]
         },
         {
