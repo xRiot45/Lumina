@@ -127,7 +127,6 @@ export class UpdateUserAddressDto implements IUpdateUserAddressRequest {
 
 export class UserAddressResponseDto implements IUserAddressResponse {
     @Expose() id!: string;
-    @Expose() userId!: string;
     @Expose() recipientName!: string;
     @Expose() phoneNumber!: string;
     @Expose() label!: AddressLabel;

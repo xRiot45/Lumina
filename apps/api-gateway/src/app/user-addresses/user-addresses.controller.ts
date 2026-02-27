@@ -7,12 +7,12 @@ import { UserRole } from '@lumina/shared-interfaces';
 import type { IAuthenticatedUser } from '@lumina/shared-interfaces';
 import { BaseResponseDto, CreateUserAddressDto, UserAddressResponseDto } from '@lumina/shared-dto';
 
-@Controller('user-addresses')
+@Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UserAddressesController {
     constructor(private readonly userAddressesService: UserAddressesService) {}
 
-    @Post()
+    @Post('addresses')
     @Roles(UserRole.CUSTOMER)
     @HttpCode(HttpStatus.CREATED)
     async create(
@@ -25,6 +25,20 @@ export class UserAddressesController {
             statusCode: HttpStatus.CREATED,
             timestamp: new Date(),
             message: 'User address created successfully',
+            data: result,
+        };
+    }
+
+    @Get('addresses')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async findAll(@CurrentUser() user: IAuthenticatedUser): Promise<BaseResponseDto<UserAddressResponseDto[]>> {
+        const result = await this.userAddressesService.findAll(user?.id);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'User addresses found successfully',
             data: result,
         };
     }

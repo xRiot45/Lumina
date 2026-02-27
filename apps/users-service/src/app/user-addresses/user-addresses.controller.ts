@@ -11,4 +11,9 @@ export class UserAddressesController {
     async create(@Payload() payload: CreateUserAddressPayloadDto): Promise<UserAddressResponseDto> {
         return await this.userAddressesService.create(payload?.userId, payload?.data);
     }
+
+    @MessagePattern({ cmd: 'find_all_user_addresses' })
+    async findAll(@Payload() payload: string): Promise<UserAddressResponseDto[]> {
+        return await this.userAddressesService.findAll(payload);
+    }
 }

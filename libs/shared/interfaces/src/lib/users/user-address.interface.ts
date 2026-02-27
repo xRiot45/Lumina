@@ -17,7 +17,6 @@ export type IUpdateUserAddressRequest = Partial<ICreateUserAddressRequest>;
 
 export interface IUserAddressResponse {
     id: string;
-    userId: string;
     recipientName: string;
     phoneNumber: string;
     label: AddressLabel;

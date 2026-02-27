@@ -68,4 +68,43 @@ export class UserAddressesService {
             });
         }
     }
+
+    async findAll(userId: string): Promise<UserAddressResponseDto[]> {
+        this.logger.log(`Finding all user addresses for user ${userId}`, this.context);
+
+        try {
+            const userAddresses = await this.userAddressRepository.find({
+                where: {
+                    userId,
+                },
+            });
+
+            if (!userAddresses) {
+                this.logger.log(`No user addresses found for user ${userId}`, this.context);
+                return [];
+            }
+
+            this.logger.log(`Found ${userAddresses.length} user addresses for user ${userId}`, this.context);
+            return userAddresses;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Error finding user addresses', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to find user addresses',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }
