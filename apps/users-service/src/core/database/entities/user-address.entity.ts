@@ -1,6 +1,7 @@
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { BaseEntity } from '@lumina/shared-entities';
+import { AddressLabel } from '@lumina/shared-interfaces';
 
 @Entity('user_addresses')
 export class UserAddressEntity extends BaseEntity {
@@ -17,8 +18,8 @@ export class UserAddressEntity extends BaseEntity {
     @Column({ type: 'varchar', length: 20 })
     phoneNumber!: string;
 
-    @Column({ type: 'varchar', length: 50 })
-    label!: string;
+    @Column({ type: 'enum', length: 50, default: AddressLabel.HOME })
+    label!: AddressLabel;
 
     @Column({ type: 'boolean', default: false })
     isDefault!: boolean;
@@ -39,10 +40,4 @@ export class UserAddressEntity extends BaseEntity {
 
     @Column({ type: 'varchar', length: 255, nullable: true })
     landmark?: string | null;
-
-    @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
-    latitude?: number | null;
-
-    @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
-    longitude?: number | null;
 }
