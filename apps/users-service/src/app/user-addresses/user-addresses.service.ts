@@ -107,4 +107,44 @@ export class UserAddressesService {
             });
         }
     }
+
+    async findOne(userId: string, addressId: string): Promise<UserAddressResponseDto> {
+        this.logger.log(`Finding user address ${addressId} for user ${userId}`, this.context);
+
+        try {
+            const userAddress = await this.userAddressRepository.findOne({
+                where: {
+                    userId,
+                    id: addressId,
+                },
+            });
+
+            if (!userAddress) {
+                this.logger.log(`User address ${addressId} not found for user ${userId}`, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'User address not found',
+                    error: 'Not Found',
+                });
+            }
+
+            this.logger.log(`Found user address ${addressId} for user ${userId}`, this.context);
+            return userAddress;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error({ message: 'Error finding user address', error: errorMessage }, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to find user address',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

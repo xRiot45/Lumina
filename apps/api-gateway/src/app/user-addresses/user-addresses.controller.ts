@@ -42,4 +42,21 @@ export class UserAddressesController {
             data: result,
         };
     }
+
+    @Get('addresses/:addressId')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async findOne(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('addressId') addressId: string,
+    ): Promise<BaseResponseDto<UserAddressResponseDto>> {
+        const result = await this.userAddressesService.findOne(user?.id, addressId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'User address found successfully',
+            data: result,
+        };
+    }
 }

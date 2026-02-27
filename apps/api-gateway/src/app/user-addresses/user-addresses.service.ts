@@ -1,4 +1,5 @@
 import { CreateUserAddressDto, CreateUserAddressPayloadDto, UserAddressResponseDto } from '@lumina/shared-dto';
+import { IFindOneUserAddressPayload } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -73,6 +74,57 @@ export class UserAddressesService {
             return Array.isArray(response)
                 ? mapToDto(UserAddressResponseDto, response)
                 : [mapToDto(UserAddressResponseDto, response)];
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async findOne(userId: string, addressId: string): Promise<UserAddressResponseDto> {
+        this.logger.log({ message: 'Initiating find one user address', userId, addressId }, this.context);
+
+        try {
+            const payload: IFindOneUserAddressPayload = {
+                userId: userId,
+                addressId: addressId,
+            };
+
+            const response = await firstValueFrom(this.usersClient.send({ cmd: 'find_one_user_address' }, payload));
+            return mapToDto(UserAddressResponseDto, response);
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
 

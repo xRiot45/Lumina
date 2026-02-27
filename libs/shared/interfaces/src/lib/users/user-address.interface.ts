@@ -36,6 +36,11 @@ export interface ICreateUserAddressPayload {
     data: ICreateUserAddressRequest;
 }
 
+export interface IFindOneUserAddressPayload {
+    userId: string;
+    addressId: string;
+}
+
 export interface IUpdateUserAddressPayload {
     userId: string;
     addressId: string;

@@ -140,3 +140,13 @@ export class UserAddressResponseDto implements IUserAddressResponse {
     @Expose() createdAt?: Date;
     @Expose() updatedAt?: Date;
 }
+
+export class FindOneUserAddressPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    userId!: string;
+
+    @IsUUID('4', { message: 'Address ID must be a valid UUID' })
+    @IsNotEmpty()
+    addressId!: string;
+}
