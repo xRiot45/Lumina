@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserAddressEntity } from '../../core/database/entities/user-address.entity';
 import { Repository } from 'typeorm';
 import { LoggerService } from '@lumina/shared-logger';
-import { CreateUserAddressDto, UserAddressResponseDto } from '@lumina/shared-dto';
+import { CreateUserAddressDto, UpdateUserAddressDto, UserAddressResponseDto } from '@lumina/shared-dto';
 import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
@@ -143,6 +143,53 @@ export class UserAddressesService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'Failed to find user address',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async update(userId: string, addressId: string, data: UpdateUserAddressDto): Promise<UserAddressResponseDto> {
+        this.logger.log(`Updating user address ${addressId} for user ${userId}`, this.context);
+
+        try {
+            const userAddress = await this.userAddressRepository.findOne({
+                where: {
+                    userId,
+                    id: addressId,
+                },
+            });
+
+            if (!userAddress) {
+                this.logger.log(`User address ${addressId} not found for user ${userId}`, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'User address not found',
+                    error: 'Not Found',
+                });
+            }
+
+            const updatedUserAddress = this.userAddressRepository.merge(userAddress, data);
+            const savedUserAddress = await this.userAddressRepository.save(updatedUserAddress);
+
+            this.logger.log(`Updated user address ${addressId} for user ${userId}`, this.context);
+            return savedUserAddress;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Error updating user address', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to update user address',
                 error: 'Internal Server Error',
             });
         }

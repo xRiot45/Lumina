@@ -125,6 +125,21 @@ export class UpdateUserAddressDto implements IUpdateUserAddressRequest {
     landmark?: string;
 }
 
+export class UpdateUserAddressPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    userId!: string;
+
+    @IsUUID('4', { message: 'Address ID must be a valid UUID' })
+    @IsNotEmpty()
+    addressId!: string;
+
+    @ValidateNested()
+    @Type(() => UpdateUserAddressDto)
+    @IsNotEmpty()
+    data!: UpdateUserAddressDto;
+}
+
 export class UserAddressResponseDto implements IUserAddressResponse {
     @Expose() id!: string;
     @Expose() recipientName!: string;

@@ -1,7 +1,12 @@
 import { Controller } from '@nestjs/common';
 import { UserAddressesService } from './user-addresses.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { CreateUserAddressPayloadDto, FindOneUserAddressPayloadDto, UserAddressResponseDto } from '@lumina/shared-dto';
+import {
+    CreateUserAddressPayloadDto,
+    FindOneUserAddressPayloadDto,
+    UpdateUserAddressPayloadDto,
+    UserAddressResponseDto,
+} from '@lumina/shared-dto';
 
 @Controller()
 export class UserAddressesController {
@@ -20,5 +25,10 @@ export class UserAddressesController {
     @MessagePattern({ cmd: 'find_one_user_address' })
     async findOne(@Payload() payload: FindOneUserAddressPayloadDto): Promise<UserAddressResponseDto> {
         return await this.userAddressesService.findOne(payload?.userId, payload?.addressId);
+    }
+
+    @MessagePattern({ cmd: 'update_user_address' })
+    async update(@Payload() payload: UpdateUserAddressPayloadDto): Promise<UserAddressResponseDto> {
+        return await this.userAddressesService.update(payload?.userId, payload?.addressId, payload?.data);
     }
 }
