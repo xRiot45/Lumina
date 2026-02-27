@@ -4,6 +4,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
     CreateUserAddressPayloadDto,
     FindOneUserAddressPayloadDto,
+    RemoveUserAddressPayloadDto,
     SetDefaultUserAddressPayloadDto,
     UpdateUserAddressPayloadDto,
     UserAddressResponseDto,
@@ -36,5 +37,10 @@ export class UserAddressesController {
     @MessagePattern({ cmd: 'set_default_user_address' })
     async setDefault(@Payload() payload: SetDefaultUserAddressPayloadDto): Promise<UserAddressResponseDto> {
         return await this.userAddressesService.setDefault(payload?.userId, payload?.addressId);
+    }
+
+    @MessagePattern({ cmd: 'remove_user_address' })
+    async remove(@Payload() payload: RemoveUserAddressPayloadDto): Promise<{ success: boolean }> {
+        return await this.userAddressesService.remove(payload?.userId, payload?.addressId);
     }
 }

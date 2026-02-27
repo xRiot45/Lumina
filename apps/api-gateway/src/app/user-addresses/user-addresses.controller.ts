@@ -98,4 +98,20 @@ export class UserAddressesController {
             data: result,
         };
     }
+
+    @Delete('addresses/:addressId')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async remove(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('addressId') addressId: string,
+    ): Promise<BaseResponseDto> {
+        await this.userAddressesService.remove(user?.id, addressId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'User address deleted successfully',
+        };
+    }
 }

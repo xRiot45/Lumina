@@ -249,4 +249,52 @@ export class UserAddressesService {
             });
         }
     }
+
+    async remove(userId: string, addressId: string): Promise<{ success: boolean }> {
+        this.logger.log(`Removing user address ${addressId} for user ${userId}`, this.context);
+
+        try {
+            const userAddress = await this.userAddressRepository.findOne({
+                where: {
+                    userId,
+                    id: addressId,
+                },
+            });
+
+            if (!userAddress) {
+                this.logger.warn(`User address ${addressId} not found for user ${userId}`, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'User address not found',
+                    error: 'Not Found',
+                });
+            }
+
+            await this.userAddressRepository.remove(userAddress);
+
+            this.logger.log(`Successfully removed user address ${addressId} for user ${userId}`, this.context);
+            return {
+                success: true,
+            };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Error removing user address', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to remove user address',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

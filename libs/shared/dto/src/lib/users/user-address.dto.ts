@@ -175,3 +175,13 @@ export class SetDefaultUserAddressPayloadDto {
     @IsNotEmpty()
     addressId!: string;
 }
+
+export class RemoveUserAddressPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    userId!: string;
+
+    @IsUUID('4', { message: 'Address ID must be a valid UUID' })
+    @IsNotEmpty()
+    addressId!: string;
+}
