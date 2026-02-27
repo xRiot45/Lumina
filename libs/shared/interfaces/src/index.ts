@@ -23,12 +23,16 @@ export * from './lib/products/product_categories/update-product-category.interfa
 // Carts
 export * from './lib/carts/cart.interface';
 
+// Orders
+export * from './lib/orders/order.interface';
+
 // Product Variants
 export * from './lib/products/product_variants/product-variant.interface';
 
 // Enums
 export * from './lib/enums/user-role.enum';
 export * from './lib/enums/order-status.enum';
+export * from './lib/enums/shipping.enum';
 
 // JWT
 export * from './lib/jwt/authenticated-user.interface';

@@ -4,3 +4,5 @@ export * from './lib/database-error.util';
 export * from './lib/error.util';
 export * from './lib/file-upload.util';
 export * from './lib/transformer.util';
+export * from './lib/auto-generate-order-number.util';
+export * from './lib/shipping-util';
