@@ -4,6 +4,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
     CreateUserAddressPayloadDto,
     FindOneUserAddressPayloadDto,
+    SetDefaultUserAddressPayloadDto,
     UpdateUserAddressPayloadDto,
     UserAddressResponseDto,
 } from '@lumina/shared-dto';
@@ -30,5 +31,10 @@ export class UserAddressesController {
     @MessagePattern({ cmd: 'update_user_address' })
     async update(@Payload() payload: UpdateUserAddressPayloadDto): Promise<UserAddressResponseDto> {
         return await this.userAddressesService.update(payload?.userId, payload?.addressId, payload?.data);
+    }
+
+    @MessagePattern({ cmd: 'set_default_user_address' })
+    async setDefault(@Payload() payload: SetDefaultUserAddressPayloadDto): Promise<UserAddressResponseDto> {
+        return await this.userAddressesService.setDefault(payload?.userId, payload?.addressId);
     }
 }

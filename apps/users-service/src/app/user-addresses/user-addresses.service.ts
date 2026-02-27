@@ -1,3 +1,4 @@
+import { mapToDto } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserAddressEntity } from '../../core/database/entities/user-address.entity';
@@ -190,6 +191,60 @@ export class UserAddressesService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'Failed to update user address',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async setDefault(userId: string, addressId: string): Promise<UserAddressResponseDto> {
+        this.logger.log(`Setting user address ${addressId} as default for user ${userId}`, this.context);
+
+        try {
+            const userAddress = await this.userAddressRepository.findOne({
+                where: {
+                    userId,
+                    id: addressId,
+                },
+            });
+
+            if (!userAddress) {
+                this.logger.warn(`User address ${addressId} not found for user ${userId}`, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'User address not found',
+                    error: 'Not Found',
+                });
+            }
+
+            if (userAddress.isDefault) {
+                this.logger.log(`Address ${addressId} is already the default for user ${userId}`, this.context);
+                return mapToDto(UserAddressResponseDto, userAddress);
+            }
+
+            await this.userAddressRepository.update({ userId, isDefault: true }, { isDefault: false });
+
+            userAddress.isDefault = true;
+            const savedUserAddress = await this.userAddressRepository.save(userAddress);
+
+            this.logger.log(`Successfully set user address ${addressId} as default for user ${userId}`, this.context);
+            return mapToDto(UserAddressResponseDto, savedUserAddress);
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(
+                { message: 'Error setting user address as default', error: errorMessage },
+                errorStack,
+                this.context,
+            );
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Failed to set user address as default',
                 error: 'Internal Server Error',
             });
         }

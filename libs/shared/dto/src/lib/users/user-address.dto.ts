@@ -165,3 +165,13 @@ export class FindOneUserAddressPayloadDto {
     @IsNotEmpty()
     addressId!: string;
 }
+
+export class SetDefaultUserAddressPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    userId!: string;
+
+    @IsUUID('4', { message: 'Address ID must be a valid UUID' })
+    @IsNotEmpty()
+    addressId!: string;
+}

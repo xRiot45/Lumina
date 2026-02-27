@@ -82,4 +82,20 @@ export class UserAddressesController {
             data: result,
         };
     }
+    @Patch('addresses/:addressId/set-default')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async setDefault(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('addressId') addressId: string,
+    ): Promise<BaseResponseDto<UserAddressResponseDto>> {
+        const result = await this.userAddressesService.setDefault(user?.id, addressId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'User address set as default successfully',
+            data: result,
+        };
+    }
 }
