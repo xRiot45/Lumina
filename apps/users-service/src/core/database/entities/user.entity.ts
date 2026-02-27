@@ -1,9 +1,10 @@
 import { BaseEntity } from '@lumina/shared-entities';
 import { UserRole } from '@lumina/shared-interfaces';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
+import { UserAddressEntity } from './user-address.entity';
 
 @Entity('users')
-export class User extends BaseEntity {
+export class UserEntity extends BaseEntity {
     @Column({
         type: 'varchar',
         length: 100,
@@ -32,4 +33,7 @@ export class User extends BaseEntity {
         default: UserRole.CUSTOMER,
     })
     role!: UserRole;
+
+    @OneToMany(() => UserAddressEntity, (address) => address.user)
+    addresses!: UserAddressEntity[];
 }
