@@ -28,6 +28,7 @@ export * from './lib/products/product_variants/product-variant.interface';
 
 // Enums
 export * from './lib/enums/user-role.enum';
+export * from './lib/enums/order-status.enum';
 
 // JWT
 export * from './lib/jwt/authenticated-user.interface';
