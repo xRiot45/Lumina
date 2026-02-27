@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { ProductCategoriesModule } from './product_categories/product_categories.module';
 import { CartsModule } from './carts/carts.module';
+import { UserAddressesModule } from './user-addresses/user-addresses.module';
 
 @Global()
 @Module({
@@ -55,6 +56,7 @@ import { CartsModule } from './carts/carts.module';
         ProductsModule,
         ProductCategoriesModule,
         CartsModule,
+        UserAddressesModule,
     ],
     providers: [ResponseInterceptor],
 })

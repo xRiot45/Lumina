@@ -19,6 +19,7 @@ export * from './lib/carts/cart.dto';
 
 // Users DTO
 export * from './lib/users/user-response.dto';
+export * from './lib/users/user-address.dto';
 
 // Pagination DTO
 export * from './lib/pagination/pagination.dto';

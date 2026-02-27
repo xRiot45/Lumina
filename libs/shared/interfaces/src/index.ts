@@ -4,6 +4,7 @@ export * from './lib/auth/register-user.interface';
 
 // User
 export * from './lib/users/user.interface';
+export * from './lib/users/user-address.interface';
 
 // Products
 export * from './lib/products/products/create-product.interface';

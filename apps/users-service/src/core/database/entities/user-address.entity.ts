@@ -18,7 +18,7 @@ export class UserAddressEntity extends BaseEntity {
     @Column({ type: 'varchar', length: 20 })
     phoneNumber!: string;
 
-    @Column({ type: 'enum', length: 50, default: AddressLabel.HOME })
+    @Column({ type: 'enum', enum: AddressLabel, default: AddressLabel.HOME })
     label!: AddressLabel;
 
     @Column({ type: 'boolean', default: false })
