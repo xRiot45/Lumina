@@ -35,6 +35,7 @@ export * from './lib/enums/user-role.enum';
 export * from './lib/enums/order-status.enum';
 export * from './lib/enums/shipping.enum';
 export * from './lib/enums/address-label.enum';
+export * from './lib/enums/payment-method.enum';
 
 // JWT
 export * from './lib/jwt/authenticated-user.interface';

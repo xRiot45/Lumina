@@ -1,9 +1,11 @@
+import { PaymentMethod } from '../enums/payment-method.enum';
 import { LuminaCourier, LuminaServiceType } from '../enums/shipping.enum';
 
 export interface ICreateOrderRequest {
     shippingAddressId: string;
     courier: LuminaCourier;
     serviceType: LuminaServiceType;
+    paymentMethod: PaymentMethod;
     notes?: string;
 }
 
