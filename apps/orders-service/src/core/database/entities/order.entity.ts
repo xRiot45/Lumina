@@ -1,8 +1,7 @@
-import { Entity, Column, OneToMany } from 'typeorm';
-import { OrderStatus } from '@lumina/shared-interfaces';
-import { BaseEntity } from '@lumina/shared-entities';
+import { Entity, Column, BaseEntity, OneToMany } from 'typeorm';
+import { OrderStatus, PaymentMethod } from '@lumina/shared-interfaces';
 import { OrderItemEntity } from './order-item.entity';
-import type { IShippingAddressSnapshot } from '@lumina/shared-interfaces';
+import type { IPaymentActionInfo, IShippingAddressSnapshot } from '@lumina/shared-interfaces';
 
 @Entity('orders')
 export class OrderEntity extends BaseEntity {
@@ -35,6 +34,15 @@ export class OrderEntity extends BaseEntity {
 
     @Column({ type: 'text', nullable: true })
     notes?: string | null;
+
+    @Column({ type: 'enum', enum: PaymentMethod })
+    paymentMethod!: PaymentMethod;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    paymentGatewayId?: string | null;
+
+    @Column({ type: 'json', nullable: true })
+    paymentActionInfo?: IPaymentActionInfo | null;
 
     @Column({ type: 'timestamp', nullable: true })
     paidAt?: Date | null;
