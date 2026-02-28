@@ -2,6 +2,7 @@ import { Entity, Column, OneToMany } from 'typeorm';
 import { OrderStatus } from '@lumina/shared-interfaces';
 import { BaseEntity } from '@lumina/shared-entities';
 import { OrderItemEntity } from './order-item.entity';
+import type { IShippingAddressSnapshot } from '@lumina/shared-interfaces';
 
 @Entity('orders')
 export class OrderEntity extends BaseEntity {
@@ -20,8 +21,8 @@ export class OrderEntity extends BaseEntity {
     @Column({ type: 'numeric', precision: 15, scale: 2, default: 0 })
     shippingCost!: number;
 
-    @Column({ type: 'varchar', length: 255 })
-    shippingAddress!: string;
+    @Column({ type: 'json' })
+    shippingAddress!: IShippingAddressSnapshot;
 
     @Column({ type: 'varchar', length: 50 })
     courier!: string;
