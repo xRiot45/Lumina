@@ -1,4 +1,5 @@
-import { IAddToCartRequest, ICartItemResponse, IPaginatedResponse, IPaginationQuery } from '@lumina/shared-interfaces';
+import { mapToDto } from '@lumina/shared-utils';
+import { ICartItemResponse, IPaginatedResponse, IPaginationQuery } from '@lumina/shared-interfaces';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CartItemEntity } from '../../core/database/entities/cart-items.entity';
@@ -6,6 +7,7 @@ import { CartEntity } from '../../core/database/entities/cart.entity';
 import { Repository } from 'typeorm';
 import { LoggerService } from '@lumina/shared-logger';
 import { RpcException } from '@nestjs/microservices';
+import { AddToCartDto, CartResponseDto } from '@lumina/shared-dto';
 
 @Injectable()
 export class CartsService {
@@ -19,7 +21,7 @@ export class CartsService {
         private readonly logger: LoggerService,
     ) {}
 
-    async addToCart(userId: string, data: IAddToCartRequest) {
+    async addToCart(userId: string, data: AddToCartDto): Promise<CartResponseDto> {
         this.logger.log({ message: 'Initiating add to cart', data }, this.context);
 
         try {
@@ -66,7 +68,7 @@ export class CartsService {
                 relations: ['items'],
             });
 
-            return updatedCart;
+            return mapToDto(CartResponseDto, updatedCart);
         } catch (error) {
             if (error instanceof RpcException) {
                 throw error;

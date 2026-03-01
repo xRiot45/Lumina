@@ -8,7 +8,7 @@ import {
     IUpdateCartItemRequest,
     IUpdateCartItemResponse,
 } from '@lumina/shared-interfaces';
-import { IsInt, IsNotEmpty, IsUUID, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsUUID, Min, ValidateNested } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 
 export class AddToCartDto implements IAddToCartRequest {
@@ -23,6 +23,17 @@ export class AddToCartDto implements IAddToCartRequest {
     @IsInt({ message: 'Quantity must be an integer' })
     @Min(1, { message: 'Quantity must be at least 1' })
     quantity!: number;
+}
+
+export class AddToCartPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    userId!: string;
+
+    @ValidateNested()
+    @Type(() => AddToCartDto)
+    @IsNotEmpty()
+    data!: AddToCartDto;
 }
 
 export class UpdateCartItemDto implements IUpdateCartItemRequest {

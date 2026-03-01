@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { LoggerService } from '@lumina/shared-logger';
 import {
     AddToCartDto,
+    AddToCartPayloadDto,
     CartResponseDto,
     EnrichedCartItemResponseDto,
     PaginationDto,
@@ -26,7 +27,7 @@ export class CartsService {
         this.logger.log({ message: 'Initiating cart creation', userId }, this.context);
 
         try {
-            const payload = {
+            const payload: AddToCartPayloadDto = {
                 userId: userId,
                 data: dto,
             };

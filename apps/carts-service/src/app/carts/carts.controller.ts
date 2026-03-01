@@ -1,6 +1,5 @@
+import { AddToCartPayloadDto, CartResponseDto } from '@lumina/shared-dto';
 import type {
-    IAddToCartRequest,
-    ICartActionPayload,
     ICartItemResponse,
     IDeleteCartPayload,
     IDeleteItemFromCartPayload,
@@ -17,8 +16,8 @@ export class CartsController {
     constructor(private readonly cartsService: CartsService) {}
 
     @MessagePattern({ cmd: 'add_to_cart' })
-    async addToCart(@Payload() payload: ICartActionPayload) {
-        return await this.cartsService.addToCart(payload.userId, payload.data as IAddToCartRequest);
+    async addToCart(@Payload() payload: AddToCartPayloadDto): Promise<CartResponseDto> {
+        return await this.cartsService.addToCart(payload.userId, payload.data);
     }
 
     @MessagePattern({ cmd: 'get_cart' })

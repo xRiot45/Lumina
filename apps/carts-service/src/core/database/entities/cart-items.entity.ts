@@ -8,12 +8,10 @@ export class CartItemEntity extends BaseEntity {
     @Column({ type: 'varchar', length: 36, nullable: false })
     cartId!: string;
 
-    // Soft Reference to products-service
     @Index('IDX_CART_ITEM_PRODUCT_ID')
     @Column({ type: 'varchar', length: 36, nullable: false })
     productId!: string;
 
-    // Soft Reference to products-service
     @Index('IDX_CART_ITEM_VARIANT_ID')
     @Column({ type: 'varchar', length: 36, nullable: false })
     variantId!: string;
