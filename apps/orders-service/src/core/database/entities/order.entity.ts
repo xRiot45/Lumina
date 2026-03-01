@@ -1,7 +1,8 @@
-import { Entity, Column, BaseEntity, OneToMany } from 'typeorm';
+import { Entity, Column, OneToMany } from 'typeorm';
 import { OrderStatus, PaymentMethod } from '@lumina/shared-interfaces';
 import { OrderItemEntity } from './order-item.entity';
 import type { IPaymentActionInfo, IShippingAddressSnapshot } from '@lumina/shared-interfaces';
+import { BaseEntity } from '@lumina/shared-entities';
 
 @Entity('orders')
 export class OrderEntity extends BaseEntity {

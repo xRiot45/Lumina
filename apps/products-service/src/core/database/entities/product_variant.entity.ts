@@ -19,6 +19,10 @@ export class ProductVariantEntity extends BaseEntity {
         scale: 2,
         nullable: false,
         default: 0,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value),
+        },
     })
     price!: number;
 

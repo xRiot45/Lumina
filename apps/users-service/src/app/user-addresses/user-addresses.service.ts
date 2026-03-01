@@ -130,7 +130,7 @@ export class UserAddressesService {
             }
 
             this.logger.log(`Found user address ${addressId} for user ${userId}`, this.context);
-            return userAddress;
+            return mapToDto(UserAddressResponseDto, userAddress);
         } catch (error: unknown) {
             if (error instanceof RpcException) {
                 throw error;

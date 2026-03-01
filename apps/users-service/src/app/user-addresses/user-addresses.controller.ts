@@ -24,7 +24,7 @@ export class UserAddressesController {
         return await this.userAddressesService.findAll(payload);
     }
 
-    @MessagePattern({ cmd: 'find_one_user_address' })
+    @MessagePattern({ cmd: 'get_user_address_detail' })
     async findOne(@Payload() payload: FindOneUserAddressPayloadDto): Promise<UserAddressResponseDto> {
         return await this.userAddressesService.findOne(payload?.userId, payload?.addressId);
     }

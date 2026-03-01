@@ -131,7 +131,7 @@ export class UserAddressesService {
                 addressId: addressId,
             };
 
-            const response = await firstValueFrom(this.usersClient.send({ cmd: 'find_one_user_address' }, payload));
+            const response = await firstValueFrom(this.usersClient.send({ cmd: 'get_user_address_detail' }, payload));
             return mapToDto(UserAddressResponseDto, response);
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
