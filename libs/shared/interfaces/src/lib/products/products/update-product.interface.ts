@@ -6,7 +6,6 @@ export interface IUpdateProductVariant {
 
 export interface IUpdateProduct {
     name: string;
-    basePrice: number;
     description: string;
     image: string;
     categoryId: string;

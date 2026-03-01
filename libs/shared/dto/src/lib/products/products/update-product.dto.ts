@@ -33,11 +33,6 @@ export class UpdateProductDto implements IUpdateProduct {
     @IsNotEmpty()
     name!: string;
 
-    @Transform(({ value }) => Number(value))
-    @IsNumber({ maxDecimalPlaces: 2 })
-    @Min(0)
-    basePrice!: number;
-
     @IsString()
     description!: string;
 
@@ -65,4 +60,15 @@ export class UpdateProductDto implements IUpdateProduct {
     @ValidateNested({ each: true })
     @Type(() => UpdateProductVariantDto)
     variants!: UpdateProductVariantDto[];
+}
+
+export class UpdateProductPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    productId!: string;
+
+    @ValidateNested()
+    @Type(() => UpdateProductDto)
+    @IsNotEmpty()
+    data!: UpdateProductDto;
 }

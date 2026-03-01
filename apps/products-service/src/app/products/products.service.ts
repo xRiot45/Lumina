@@ -25,7 +25,9 @@ export class ProductsService {
     ) {}
 
     async create(dto: CreateProductDto): Promise<ProductResponseDto> {
-        const { name, basePrice, description, image, categoryId, variants } = dto;
+        const { name, description, image, categoryId, variants } = dto;
+
+        let calculatedBasePrice = 0;
         this.logger.log({ message: 'Initiating product creation', dto }, this.context);
 
         try {
@@ -37,6 +39,15 @@ export class ProductsService {
                     message: 'Category not found',
                     error: 'Not Found',
                 });
+            }
+
+            if (variants && variants.length > 0) {
+                const allVariantsPrices = variants.map((v) => Number(v.price));
+                const lowestVariantPrice = Math.min(...allVariantsPrices);
+
+                if (!calculatedBasePrice || calculatedBasePrice === 0 || calculatedBasePrice > lowestVariantPrice) {
+                    calculatedBasePrice = lowestVariantPrice;
+                }
             }
 
             const productVariants = variants.map((variant) => {
@@ -51,7 +62,7 @@ export class ProductsService {
             const newProduct = this.productRepository.create({
                 name,
                 slug,
-                basePrice,
+                basePrice: calculatedBasePrice,
                 description,
                 image,
                 category: productCategory,
@@ -260,9 +271,10 @@ export class ProductsService {
         }
     }
 
-    async update(productId: string, dto: UpdateProductDto): Promise<ProductResponseDto> {
-        const { name, basePrice, description, image, categoryId, variants } = dto;
-        this.logger.log({ message: 'Initiating product update', dto }, this.context);
+    async update(productId: string, data: UpdateProductDto): Promise<ProductResponseDto> {
+        const { name, description, image, categoryId, variants } = data;
+
+        this.logger.log({ message: 'Initiating product update', data }, this.context);
 
         try {
             const productCategory = await this.productCategoryRepository.findOneBy({ id: categoryId });
@@ -291,6 +303,14 @@ export class ProductsService {
                 await this.productVariantRepository.remove(product.variants);
             }
 
+            let calculatedBasePrice = product.basePrice;
+            if (variants && variants.length > 0) {
+                const allVariantPrices = variants.map((v) => Number(v.price));
+                const lowestVariantPrice = Math.min(...allVariantPrices);
+
+                calculatedBasePrice = lowestVariantPrice;
+            }
+
             const newVariants = variants.map((variant) => {
                 return this.productVariantRepository.create({
                     sku: variant.sku,
@@ -305,7 +325,7 @@ export class ProductsService {
                 product.slug = autoGenerateSlug(name);
             }
 
-            product.basePrice = basePrice;
+            product.basePrice = calculatedBasePrice;
             product.description = description;
             product.image = image;
             product.category = productCategory;

@@ -33,11 +33,6 @@ export class CreateProductDto implements ICreateProduct {
     @IsNotEmpty()
     name!: string;
 
-    @Transform(({ value }) => Number(value))
-    @IsNumber({ maxDecimalPlaces: 2 })
-    @Min(0)
-    basePrice!: number;
-
     @IsString()
     description!: string;
 

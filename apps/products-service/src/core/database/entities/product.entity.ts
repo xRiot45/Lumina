@@ -25,7 +25,10 @@ export class ProductEntity extends BaseEntity {
         type: 'decimal',
         precision: 12,
         scale: 2,
-        nullable: false,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value),
+        },
         default: 0,
     })
     basePrice!: number;
