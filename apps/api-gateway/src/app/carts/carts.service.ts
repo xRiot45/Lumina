@@ -7,11 +7,10 @@ import {
     CartResponseDto,
     EnrichedCartItemResponseDto,
     PaginationDto,
-    ProductResponseDto,
 } from '@lumina/shared-dto';
 import { firstValueFrom } from 'rxjs';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
-import { ICartItemResponse, IPaginatedResponse, IUpdateCartItemPayload } from '@lumina/shared-interfaces';
+import { IPaginatedResponse, IUpdateCartItemPayload } from '@lumina/shared-interfaces';
 
 @Injectable()
 export class CartsService {
@@ -19,7 +18,6 @@ export class CartsService {
 
     constructor(
         @Inject('CARTS_SERVICE') private readonly cartsClient: ClientProxy,
-        @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
         private readonly logger: LoggerService,
     ) {}
 
@@ -75,90 +73,13 @@ export class CartsService {
     }
 
     async getCart(userId: string, query: PaginationDto): Promise<IPaginatedResponse<EnrichedCartItemResponseDto>> {
-        this.logger.log({ message: 'Initiating cart retrieval', userId }, this.context);
+        this.logger.log({ message: 'Initiating cart retrieval proxy', userId }, this.context);
 
         try {
-            const response = await firstValueFrom<IPaginatedResponse<ICartItemResponse>>(
-                this.cartsClient.send({ cmd: 'get_cart' }, { userId, query }),
-            );
+            const response = await firstValueFrom(this.cartsClient.send({ cmd: 'get_cart' }, { userId, query }));
+            this.logger.log({ message: 'Cart retrieved successfully from microservice', userId }, this.context);
 
-            if (!response || !response.data || response.data.length === 0) {
-                return {
-                    data: [],
-                    meta: response?.meta ?? {
-                        page: 1,
-                        limit: 10,
-                        totalItems: 0,
-                        totalPages: 0,
-                    },
-                };
-            }
-
-            const items = response.data;
-            const uniqueProductIds: string[] = [...new Set(items.map((item) => item.productId))];
-
-            const productsMap = new Map<string, ProductResponseDto>();
-
-            await Promise.all(
-                uniqueProductIds.map(async (pId: string) => {
-                    try {
-                        const productDetail = await firstValueFrom<{ data?: ProductResponseDto } | ProductResponseDto>(
-                            this.productsClient.send({ cmd: 'find_product_by_id' }, { id: pId }),
-                        );
-
-                        const productData =
-                            'data' in productDetail && productDetail.data
-                                ? productDetail.data
-                                : (productDetail as ProductResponseDto);
-
-                        productsMap.set(pId, productData);
-                    } catch {
-                        this.logger.warn(`Failed to fetch product detail for ID: ${pId}`);
-                    }
-                }),
-            );
-
-            const enrichedItems = items.map((item) => {
-                const product = productsMap.get(item.productId);
-                const variant = product?.variants?.find((v) => v.id === item.variantId);
-
-                const basePriceProduct = Number(product?.basePrice) || 0;
-                const variantPriceProduct = Number(variant?.price) || 0;
-
-                const currentPrice = basePriceProduct + variantPriceProduct;
-                const subTotal = currentPrice * Number(item.quantity);
-
-                return {
-                    id: item.id,
-                    cartId: item.cartId,
-                    quantity: item.quantity,
-                    subTotal: subTotal,
-                    createdAt: item.createdAt,
-                    updatedAt: item.updatedAt,
-                    product: product
-                        ? {
-                              id: product.id,
-                              name: product.name,
-                              slug: product.slug,
-                              image: product.image,
-                              basePrice: product.basePrice,
-                          }
-                        : null,
-                    variant: variant
-                        ? {
-                              id: variant.id,
-                              sku: variant.sku,
-                              price: variant.price,
-                              stock: variant.stock,
-                          }
-                        : null,
-                };
-            });
-
-            return {
-                data: enrichedItems.map((item) => mapToDto(EnrichedCartItemResponseDto, item)),
-                meta: response.meta,
-            };
+            return response;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
 
@@ -167,14 +88,7 @@ export class CartsService {
                 const message = error.message || 'Service Error';
                 const errorName = error.error || 'Bad Request';
 
-                throw new HttpException(
-                    {
-                        statusCode: status,
-                        message: message,
-                        error: errorName,
-                    },
-                    status,
-                );
+                throw new HttpException({ statusCode: status, message: message, error: errorName }, status);
             }
 
             if (error instanceof Error) {

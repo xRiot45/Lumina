@@ -1,19 +1,21 @@
 import { mapToDto } from '@lumina/shared-utils';
-import { ICartItemResponse, IPaginatedResponse, IPaginationQuery } from '@lumina/shared-interfaces';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { IPaginatedResponse, IPaginationQuery } from '@lumina/shared-interfaces';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CartItemEntity } from '../../core/database/entities/cart-items.entity';
 import { CartEntity } from '../../core/database/entities/cart.entity';
 import { Repository } from 'typeorm';
 import { LoggerService } from '@lumina/shared-logger';
-import { RpcException } from '@nestjs/microservices';
-import { AddToCartDto, CartResponseDto } from '@lumina/shared-dto';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { AddToCartDto, CartResponseDto, EnrichedCartItemResponseDto, ProductResponseDto } from '@lumina/shared-dto';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class CartsService {
     private readonly context = `[SERVICE] ${CartsService.name}`;
 
     constructor(
+        @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
         @InjectRepository(CartEntity)
         private readonly cartRepository: Repository<CartEntity>,
         @InjectRepository(CartItemEntity)
@@ -87,29 +89,23 @@ export class CartsService {
         }
     }
 
-    async getCart(userId: string, query: IPaginationQuery): Promise<IPaginatedResponse<ICartItemResponse>> {
-        this.logger.log({ message: 'Fetching cart for user', userId }, this.context);
+    async getCart(userId: string, query: IPaginationQuery): Promise<IPaginatedResponse<EnrichedCartItemResponseDto>> {
+        this.logger.log({ message: 'Fetching cart and enriching data for user', userId }, this.context);
 
         try {
             const page: number = Number(query?.page) || 1;
             const limit: number = Number(query?.limit) || 10;
             const skip: number = (page - 1) * limit;
 
-            const cart: CartEntity | null = await this.cartRepository.findOne({
-                where: { userId },
-            });
+            const emptyResponse = {
+                data: [],
+                meta: { page, limit, totalItems: 0, totalPages: 0 },
+            };
 
+            const cart = await this.cartRepository.findOne({ where: { userId } });
             if (!cart) {
                 this.logger.log({ message: 'Cart not found, returning empty state', userId }, this.context);
-                return {
-                    data: [],
-                    meta: {
-                        page,
-                        limit,
-                        totalItems: 0,
-                        totalPages: 0,
-                    },
-                };
+                return emptyResponse;
             }
 
             const [items, totalItems] = await this.cartItemRepository.findAndCount({
@@ -119,18 +115,85 @@ export class CartsService {
                 order: { createdAt: 'DESC' },
             });
 
+            if (items.length === 0) {
+                return emptyResponse;
+            }
+
+            const uniqueProductIds: string[] = [...new Set(items.map((item) => item.productId))];
+            const productsMap = new Map<string, ProductResponseDto>();
+
+            await Promise.all(
+                uniqueProductIds.map(async (productId: string) => {
+                    try {
+                        const productDetail = await firstValueFrom<{ data?: ProductResponseDto } | ProductResponseDto>(
+                            this.productsClient.send({ cmd: 'find_product_by_id' }, productId),
+                        );
+
+                        const productData =
+                            productDetail && 'data' in productDetail && productDetail.data
+                                ? productDetail.data
+                                : productDetail;
+
+                        if (productData) {
+                            productsMap.set(productId, productData as ProductResponseDto);
+                        } else {
+                            this.logger.warn(`Product API returned empty for ID: ${productId}`, this.context);
+                        }
+                    } catch {
+                        this.logger.warn(`Failed to fetch product detail for ID: ${productId}`, this.context);
+                    }
+                }),
+            );
+
+            const enrichedItems = items.map((item) => {
+                const product = productsMap.get(item.productId);
+                const variant = product?.variants?.find((v) => v.id === item.variantId);
+
+                let unitPrice = Number(product?.basePrice) || 0;
+                if (variant) {
+                    unitPrice = Number(variant.price);
+                }
+
+                const subTotal = unitPrice * Number(item.quantity);
+
+                return {
+                    id: item.id,
+                    cartId: item.cartId,
+                    quantity: item.quantity,
+                    unitPrice: unitPrice,
+                    subTotal: subTotal,
+                    createdAt: item.createdAt,
+                    updatedAt: item.updatedAt,
+                    product: product
+                        ? {
+                              id: product.id,
+                              name: product.name,
+                              slug: product.slug,
+                              image: product.image,
+                              basePrice: product.basePrice,
+                          }
+                        : null,
+                    variant: variant
+                        ? {
+                              id: variant.id,
+                              sku: variant.sku,
+                              price: variant.price,
+                              stock: variant.stock,
+                          }
+                        : null,
+                };
+            });
+
             const totalPages: number = Math.ceil(totalItems / limit);
-            const result: IPaginatedResponse<ICartItemResponse> = {
-                data: items,
-                meta: {
-                    page,
-                    limit,
-                    totalItems,
-                    totalPages,
-                },
+
+            const formattedData = enrichedItems.map((item) => mapToDto(EnrichedCartItemResponseDto, item));
+
+            const result: IPaginatedResponse<EnrichedCartItemResponseDto> = {
+                data: formattedData,
+                meta: { page, limit, totalItems, totalPages },
             };
 
-            this.logger.log({ message: 'Cart fetched successfully', userId }, this.context);
+            this.logger.log({ message: 'Cart enriched successfully', userId }, this.context);
             return result;
         } catch (error: unknown) {
             if (error instanceof RpcException) {
