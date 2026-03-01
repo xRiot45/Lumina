@@ -1,18 +1,5 @@
+import { IsUUID, IsNotEmpty, IsOptional, MaxLength, IsEnum, IsString, ValidateNested } from 'class-validator';
 import {
-    IsUUID,
-    IsNotEmpty,
-    IsOptional,
-    MaxLength,
-    IsEnum,
-    IsString,
-    ValidateNested,
-    IsArray,
-    IsNumber,
-} from 'class-validator';
-import {
-    ICreateOrderRequest,
-    IOrderItemResponse,
-    IOrderResponse,
     IPaymentActionInfo,
     LuminaCourier,
     LuminaServiceType,
@@ -20,10 +7,15 @@ import {
     PaymentMethod,
 } from '@lumina/shared-interfaces';
 import { Expose, Type } from 'class-transformer';
-import type { IShippingAddressSnapshot } from '@lumina/shared-interfaces';
+import type {
+    ICreateOrder,
+    IOrderItemResponse,
+    IOrderResponse,
+    IShippingAddressSnapshot,
+} from '@lumina/shared-interfaces';
 
 // For API Gateway
-export class CreateOrderDto implements ICreateOrderRequest {
+export class CreateOrderDto implements ICreateOrder {
     @IsUUID('4', { message: 'Shipping Address ID must be a valid UUID' })
     @IsNotEmpty({ message: 'Shipping Address ID is required' })
     shippingAddressId!: string;
@@ -58,15 +50,26 @@ export class CreateOrderPayloadDto {
     data!: CreateOrderDto;
 }
 
+export class ShippingAddressSnapshotDto implements IShippingAddressSnapshot {
+    @Expose() recipientName!: string;
+    @Expose() phoneNumber!: string;
+    @Expose() province!: string;
+    @Expose() city!: string;
+    @Expose() district!: string;
+    @Expose() postalCode!: string;
+    @Expose() fullAddress!: string;
+    @Expose() landmark?: string | null;
+}
+
 export class OrderItemResponseDto implements IOrderItemResponse {
     @Expose() id!: string;
     @Expose() productId!: string;
     @Expose() productName!: string;
     @Expose() variantId?: string | null;
-    @Expose() variantName?: string | null;
+    @Expose() variantSku?: string | null;
     @Expose() quantity!: number;
-    @Expose() price!: number;
-    @Expose() subtotal!: number;
+    @Expose() unitPrice!: number;
+    @Expose() subTotal!: number;
 }
 
 export class OrderResponseDto implements IOrderResponse {
@@ -78,7 +81,9 @@ export class OrderResponseDto implements IOrderResponse {
     @Expose() totalAmount!: number;
     @Expose() shippingCost!: number;
 
-    @Expose() shippingAddress!: IShippingAddressSnapshot;
+    @Expose()
+    @Type(() => ShippingAddressSnapshotDto)
+    shippingAddress!: ShippingAddressSnapshotDto;
 
     @Expose() courier!: string;
     @Expose() serviceType!: string;
@@ -99,28 +104,4 @@ export class OrderResponseDto implements IOrderResponse {
 
     @Expose() createdAt!: Date;
     @Expose() updatedAt!: Date;
-}
-
-export class CreateEnrichedOrderPayloadDto {
-    @IsString()
-    @IsNotEmpty()
-    userId!: string;
-
-    @ValidateNested()
-    @Type(() => CreateOrderDto)
-    @IsNotEmpty()
-    orderData!: CreateOrderDto;
-
-    @IsArray()
-    @IsNotEmpty()
-    cartItems!: any[]; // Ganti 'any' dengan CartItemDto/Interface Anda jika ada
-
-    @IsNumber()
-    totalAmount!: number;
-
-    @IsNumber()
-    shippingCost!: number;
-
-    @IsNotEmpty()
-    shippingAddress!: IShippingAddressSnapshot;
 }

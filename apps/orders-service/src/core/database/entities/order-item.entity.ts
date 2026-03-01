@@ -29,19 +29,27 @@ export class OrderItemEntity extends BaseEntity {
     @Column({ type: 'int' })
     quantity!: number;
 
-    // Harga AWAL Product
-    @Column({ type: 'numeric', precision: 15, scale: 2 })
-    basePrice!: number;
-
-    // Harga AWAL Variant
-    @Column({ type: 'numeric', precision: 15, scale: 2, default: 0 })
-    variantPrice!: number;
-
-    // Harga SATUAN FINAL (Hasil kalkulasi basePrice & variantPrice saat checkout)
-    @Column({ type: 'numeric', precision: 15, scale: 2 })
+    // Harga SATUAN FINAL saat checkout
+    @Column({
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value),
+        },
+    })
     unitPrice!: number;
 
-    // Harga TOTAL FINAL
-    @Column({ type: 'numeric', precision: 15, scale: 2 })
+    // Harga TOTAL FINAL (unitPrice * quantity)
+    @Column({
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value),
+        },
+    })
     subTotal!: number;
 }

@@ -3,19 +3,12 @@ import { PaymentMethod } from '../enums/payment-method.enum';
 import { LuminaCourier, LuminaServiceType } from '../enums/shipping.enum';
 import { IPaymentActionInfo } from './payment-action.interface';
 
-export interface ICreateOrderRequest {
+export interface ICreateOrder {
     shippingAddressId: string;
     courier: LuminaCourier;
     serviceType: LuminaServiceType;
     paymentMethod: PaymentMethod;
     notes?: string;
-}
-
-export interface ICreateOrderPayload {
-    userId: string;
-    orderData: ICreateOrderRequest;
-    cartItems: any[];
-    cartTotalAmount: number;
 }
 
 export interface IShippingAddressSnapshot {
@@ -34,10 +27,10 @@ export interface IOrderItemResponse {
     productId: string;
     productName: string;
     variantId?: string | null;
-    variantName?: string | null;
+    variantSku?: string | null;
     quantity: number;
-    price: number;
-    subtotal: number;
+    unitPrice: number;
+    subTotal: number;
 }
 
 export interface IOrderResponse {
@@ -67,4 +60,30 @@ export interface IOrderResponse {
 
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface IProductVariantSnapshot {
+    id: string;
+    sku: string;
+    price: number | string;
+}
+
+export interface IProductDetailSnapshot {
+    id: string;
+    name: string;
+    basePrice: number | string;
+    image?: string | null;
+    variants?: IProductVariantSnapshot[];
+}
+
+export interface ICartItemSnapshot {
+    productId: string;
+    variantId?: string | null;
+    quantity: number;
+    product?: { id: string };
+    variant?: { id: string };
+}
+
+export interface ICartResponseSnapshot {
+    data: ICartItemSnapshot[];
 }
