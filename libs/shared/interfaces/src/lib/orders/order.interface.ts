@@ -1,7 +1,7 @@
 import { OrderStatus } from '../enums/order-status.enum';
 import { PaymentMethod } from '../enums/payment-method.enum';
 import { LuminaCourier, LuminaServiceType } from '../enums/shipping.enum';
-import { IPaymentActionInfo } from './payment-action.interface';
+import { IPaymentActionInfo } from '../payments/payment-action.interface';
 
 export interface ICreateOrder {
     shippingAddressId: string;

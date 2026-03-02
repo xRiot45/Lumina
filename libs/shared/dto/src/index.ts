@@ -20,6 +20,9 @@ export * from './lib/carts/cart.dto';
 // Orders DTO
 export * from './lib/orders/order.dto';
 
+// Payments DTO
+export * from './lib/payments/payment.dto';
+
 // Users DTO
 export * from './lib/users/user-response.dto';
 export * from './lib/users/user-address.dto';

@@ -14,7 +14,7 @@ import {
 } from '@lumina/shared-interfaces';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { CreateOrderDto, OrderResponseDto } from '@lumina/shared-dto';
+import { CreateOrderDto, OrderResponseDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
 
 @Injectable()
 export class OrdersService {
@@ -194,6 +194,51 @@ export class OrdersService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while finding order by id',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async updatePaymentInfo(data: UpdatePaymentInfoDto): Promise<OrderResponseDto> {
+        this.logger.log(`Updating payment info for order: ${data.orderId}`, this.context);
+
+        try {
+            const order = await this.orderRepository.findOne({
+                where: {
+                    id: data.orderId,
+                },
+            });
+
+            if (!order) {
+                this.logger.warn(`Order not found for payment update: ${data.orderId}`, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: `Order with ID ${data.orderId} not found.`,
+                    error: 'Not Found',
+                });
+            }
+
+            order.paymentGatewayId = data.paymentGatewayId;
+            order.paymentActionInfo = data.paymentActionInfo;
+
+            const savedOrder = await this.orderRepository.save(order);
+
+            this.logger.log(`Successfully updated payment info for order: ${savedOrder.orderNumber}`, this.context);
+
+            return mapToDto(OrderResponseDto, savedOrder);
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Failed to update payment info: ${errorMessage}`, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while updating payment info',
                 error: 'Internal Server Error',
             });
         }

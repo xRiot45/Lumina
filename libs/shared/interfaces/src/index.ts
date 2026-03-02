@@ -26,7 +26,10 @@ export * from './lib/carts/cart.interface';
 
 // Orders
 export * from './lib/orders/order.interface';
-export * from './lib/orders/payment-action.interface';
+
+// Payments
+export * from './lib/payments/payment.interface';
+export * from './lib/payments/payment-action.interface';
 
 // Product Variants
 export * from './lib/products/product_variants/product-variant.interface';

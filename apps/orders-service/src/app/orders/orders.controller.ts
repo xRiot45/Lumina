@@ -1,4 +1,4 @@
-import { CreateOrderPayloadDto, FindOrderByIdPayloadDto, OrderResponseDto } from '@lumina/shared-dto';
+import { CreateOrderPayloadDto, OrderResponseDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
 import { Controller } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
@@ -15,5 +15,10 @@ export class OrdersController {
     @MessagePattern({ cmd: 'find_order_by_id' })
     async findById(@Payload() payload: { orderId: string }): Promise<OrderResponseDto> {
         return await this.ordersService.findById(payload?.orderId);
+    }
+
+    @MessagePattern({ cmd: 'update_payment_info' })
+    async updatePaymentInfo(@Payload() payload: UpdatePaymentInfoDto) {
+        return this.ordersService.updatePaymentInfo(payload);
     }
 }
