@@ -1,4 +1,4 @@
-import { CreateOrderDto, CreateOrderPayloadDto, FindOrderByIdDto, OrderResponseDto } from '@lumina/shared-dto';
+import { CreateOrderDto, CreateOrderPayloadDto, OrderResponseDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';

@@ -7,6 +7,7 @@ import { ProductCategoriesModule } from './product_categories/product_categories
 import { CartsModule } from './carts/carts.module';
 import { UserAddressesModule } from './user-addresses/user-addresses.module';
 import { OrdersModule } from './orders/orders.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Global()
 @Module({
@@ -59,6 +60,7 @@ import { OrdersModule } from './orders/orders.module';
         CartsModule,
         UserAddressesModule,
         OrdersModule,
+        PaymentsModule,
     ],
     providers: [ResponseInterceptor],
 })

@@ -1,5 +1,6 @@
 import { ConfigModule } from '@nestjs/config';
 import { Global, Module } from '@nestjs/common';
+import { PaymentsModule } from './app/payments/payments.module';
 
 @Global()
 @Module({
@@ -7,6 +8,7 @@ import { Global, Module } from '@nestjs/common';
         ConfigModule.forRoot({
             isGlobal: true,
         }),
+        PaymentsModule,
     ],
     providers: [],
 })
