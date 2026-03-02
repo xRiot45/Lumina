@@ -143,8 +143,6 @@ export class OrdersService {
             const savedOrder = await this.orderRepository.save(newOrder);
             this.logger.log(`Successfully created order ${savedOrder.orderNumber}`, this.context);
 
-            this.cartsClient.emit({ cmd: 'delete_cart' }, userId);
-
             return mapToDto(OrderResponseDto, savedOrder);
         } catch (error: unknown) {
             if (error instanceof RpcException) {

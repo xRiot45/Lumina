@@ -82,6 +82,7 @@ export interface ICartItemSnapshot {
     quantity: number;
     product?: { id: string };
     variant?: { id: string };
+    cartId?: string;
 }
 
 export interface ICartResponseSnapshot {
