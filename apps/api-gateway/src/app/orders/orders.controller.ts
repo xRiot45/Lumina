@@ -1,5 +1,5 @@
-import { BaseResponseDto, CreateOrderDto, OrderResponseDto } from '@lumina/shared-dto';
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { BaseResponseDto, CreateOrderDto, FindOrderByIdDto, OrderResponseDto } from '@lumina/shared-dto';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -25,6 +25,20 @@ export class OrdersController {
             statusCode: HttpStatus.CREATED,
             timestamp: new Date(),
             message: 'Order created successfully',
+            data: result,
+        };
+    }
+
+    @Get(':orderId')
+    @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
+    async findById(@Param('orderId') orderId: string): Promise<BaseResponseDto<OrderResponseDto>> {
+        const result = await this.ordersService.findById(orderId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Order found successfully',
             data: result,
         };
     }

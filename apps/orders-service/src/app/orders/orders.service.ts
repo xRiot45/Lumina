@@ -161,4 +161,41 @@ export class OrdersService {
             });
         }
     }
+
+    async findById(orderId: string): Promise<OrderResponseDto> {
+        this.logger.log(`Fetching order by ID: ${orderId}`, this.context);
+
+        try {
+            const order = await this.orderRepository.findOne({
+                where: { id: orderId },
+                relations: ['items'],
+            });
+
+            if (!order) {
+                this.logger.warn({ message: 'Order not found', orderId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Order not found',
+                    error: 'Not Found',
+                });
+            }
+
+            return mapToDto(OrderResponseDto, order);
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Failed to find order by id: ${errorMessage}`, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while finding order by id',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

@@ -46,9 +46,6 @@
             "path": "./apps/orders-service"
         },
         {
-            "path": "./apps/payments-service-e2e"
-        },
-        {
             "path": "./apps/payments-service"
         }
     ]

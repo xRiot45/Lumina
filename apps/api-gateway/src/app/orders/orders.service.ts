@@ -1,4 +1,4 @@
-import { CreateOrderDto, CreateOrderPayloadDto, OrderResponseDto } from '@lumina/shared-dto';
+import { CreateOrderDto, CreateOrderPayloadDto, FindOrderByIdDto, OrderResponseDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -28,6 +28,52 @@ export class OrdersService {
             const response = await firstValueFrom(this.ordersClient.send({ cmd: 'create_order' }, payload));
             this.logger.log({ message: 'Checkout successfully for userId: ' + userId }, this.context);
 
+            return mapToDto(OrderResponseDto, response);
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async findById(orderId: string): Promise<OrderResponseDto> {
+        this.logger.log({ message: 'Initiating order find by id', orderId }, this.context);
+
+        try {
+            const response = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
             return mapToDto(OrderResponseDto, response);
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);

@@ -37,6 +37,13 @@ export class CreateOrderDto implements ICreateOrder {
     notes?: string;
 }
 
+export class FindOrderByIdDto {
+    @IsUUID('4', { message: 'Order ID must be a valid UUID' })
+    @IsNotEmpty({ message: 'Order ID is required' })
+    @IsString()
+    orderId!: string;
+}
+
 // For Microservices
 export class CreateOrderPayloadDto {
     @IsUUID('4', { message: 'User ID must be a valid UUID' })
@@ -48,6 +55,13 @@ export class CreateOrderPayloadDto {
     @ValidateNested()
     @Type(() => CreateOrderDto)
     data!: CreateOrderDto;
+}
+
+export class FindOrderByIdPayloadDto {
+    @IsUUID('4', { message: 'Order ID must be a valid UUID' })
+    @IsNotEmpty({ message: 'Order ID is required' })
+    @IsString()
+    orderId!: string;
 }
 
 export class ShippingAddressSnapshotDto implements IShippingAddressSnapshot {
