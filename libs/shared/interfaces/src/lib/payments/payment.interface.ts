@@ -49,7 +49,7 @@ export interface IXenditVirtualAccountParam {
         channelCode: XenditBankCode;
         channelProperties: {
             customerName: string;
-            expiresAt: string;
+            expiresAt: Date;
         };
     };
 }
@@ -60,7 +60,7 @@ export interface IXenditQrCodeParam {
     qrCode: {
         channelCode: 'QRIS';
         channelProperties: {
-            expiresAt: string;
+            expiresAt: Date;
         };
     };
 }
@@ -78,3 +78,20 @@ export interface IXenditEwalletParam {
 }
 
 export type IXenditPaymentMethodParam = IXenditVirtualAccountParam | IXenditQrCodeParam | IXenditEwalletParam;
+
+export interface IGetPaymentInfoResponse {
+    orderId: string;
+    orderNumber: string;
+    status: string;
+    totalAmount: number;
+    paymentMethod: string;
+
+    // Data krusial untuk instruksi & hitung mundur
+    paymentActionInfo: IPaymentActionInfo | null;
+
+    // Data timeline waktu
+    createdAt: Date | string;
+    paidAt?: Date | string | null;
+    canceledAt?: Date | string | null;
+    canceledReason?: string | null;
+}

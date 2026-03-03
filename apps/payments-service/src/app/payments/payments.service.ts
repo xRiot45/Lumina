@@ -1,4 +1,9 @@
-import { ChargePaymentResponseDto, OrderResponseDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
+import {
+    ChargePaymentResponseDto,
+    GetPaymentInfoResponseDto,
+    OrderResponseDto,
+    UpdatePaymentInfoDto,
+} from '@lumina/shared-dto';
 import {
     IEWalletActionInfo,
     IPaymentActionInfo,
@@ -74,7 +79,6 @@ export class PaymentsService {
 
             const expirationDate = new Date();
             expirationDate.setHours(expirationDate.getHours() + 1);
-            const expiresAtIso = expirationDate.toISOString();
 
             let xenditPaymentMethodParam: IXenditPaymentMethodParam;
 
@@ -97,7 +101,7 @@ export class PaymentsService {
                             channelCode: getXenditBankCode(selectedMethod),
                             channelProperties: {
                                 customerName,
-                                expiresAt: expiresAtIso,
+                                expiresAt: expirationDate,
                             },
                         },
                     };
@@ -131,7 +135,7 @@ export class PaymentsService {
                         qrCode: {
                             channelCode: 'QRIS',
                             channelProperties: {
-                                expiresAt: expiresAtIso,
+                                expiresAt: expirationDate,
                             },
                         },
                     };
@@ -217,6 +221,59 @@ export class PaymentsService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while communicating with the payment gateway',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async getPaymentInfo(userId: string, orderId: string): Promise<GetPaymentInfoResponseDto> {
+        this.logger.log({ message: 'Fetching payment info', userId, orderId }, this.context);
+
+        try {
+            const orderDetail = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
+            if (!orderDetail) {
+                this.logger.warn({ message: 'Order not found for payment info', orderId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: `Order with ID ${orderId} not found.`,
+                    error: 'Not Found',
+                });
+            }
+
+            if (orderDetail.userId !== userId) {
+                this.logger.warn(`Unauthorized view attempt by user ${userId} for order ${orderId}`, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message: `You do not have permission to view this payment information.`,
+                    error: 'Forbidden',
+                });
+            }
+
+            const response: GetPaymentInfoResponseDto = {
+                orderId: orderDetail.id,
+                orderNumber: orderDetail.orderNumber,
+                status: orderDetail.status,
+                totalAmount: orderDetail.totalAmount,
+                paymentMethod: orderDetail.paymentMethod,
+                paymentActionInfo: orderDetail.paymentActionInfo ?? null,
+                createdAt: orderDetail.createdAt,
+                paidAt: orderDetail.paidAt ?? null,
+                canceledAt: orderDetail.canceledAt ?? null,
+                canceledReason: orderDetail.canceledReason ?? null,
+            };
+
+            return mapToDto(GetPaymentInfoResponseDto, response);
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.logger.error(`Failed to fetch payment info: ${errorMessage}`, '', this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while retrieving payment information.',
                 error: 'Internal Server Error',
             });
         }

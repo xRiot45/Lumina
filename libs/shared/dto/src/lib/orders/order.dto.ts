@@ -6,7 +6,7 @@ import {
     OrderStatus,
     PaymentMethod,
 } from '@lumina/shared-interfaces';
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import type {
     ICreateOrder,
     IOrderItemResponse,
@@ -106,7 +106,9 @@ export class OrderResponseDto implements IOrderResponse {
 
     @Expose() paymentMethod!: PaymentMethod;
     @Expose() paymentGatewayId?: string | null;
-    @Expose() paymentActionInfo?: IPaymentActionInfo | null;
+    @Expose()
+    @Transform(({ obj }) => obj.paymentActionInfo)
+    paymentActionInfo?: IPaymentActionInfo | null;
 
     @Expose() paidAt?: Date | null;
     @Expose() canceledAt?: Date | null;
