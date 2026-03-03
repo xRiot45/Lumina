@@ -30,7 +30,9 @@ export class PaymentsService {
             this.logger.error('XENDIT_SECRET_KEY is not defined in environment variables!', '', this.context);
         }
 
-        this.xenditClient = new Xendit({ secretKey });
+        this.xenditClient = new Xendit({
+            secretKey,
+        });
     }
 
     async chargePayment(userId: string, orderId: string): Promise<ChargePaymentResponseDto> {
@@ -70,6 +72,10 @@ export class PaymentsService {
             const selectedMethod = orderDetail.paymentMethod as PaymentMethod;
             const customerName = orderDetail.shippingAddress?.recipientName ?? 'Lumina Customer';
 
+            const expirationDate = new Date();
+            expirationDate.setHours(expirationDate.getHours() + 1);
+            const expiresAtIso = expirationDate.toISOString();
+
             let xenditPaymentMethodParam: IXenditPaymentMethodParam;
 
             switch (selectedMethod) {
@@ -91,6 +97,7 @@ export class PaymentsService {
                             channelCode: getXenditBankCode(selectedMethod),
                             channelProperties: {
                                 customerName,
+                                expiresAt: expiresAtIso,
                             },
                         },
                     };
@@ -123,6 +130,9 @@ export class PaymentsService {
                         reusability: 'ONE_TIME_USE',
                         qrCode: {
                             channelCode: 'QRIS',
+                            channelProperties: {
+                                expiresAt: expiresAtIso,
+                            },
                         },
                     };
                     break;
@@ -158,13 +168,13 @@ export class PaymentsService {
                 paymentActionInfo = {
                     accountNumber: vaData?.channelProperties?.virtualAccountNumber ?? '',
                     bankCode: vaData?.channelCode ?? '',
-                    expirationDate: vaData?.channelProperties?.expiresAt?.toISOString() ?? new Date().toISOString(),
+                    expiresAt: vaData?.channelProperties?.expiresAt?.toISOString() ?? new Date().toISOString(),
                 } as IVirtualAccountActionInfo;
             } else if (responseType === 'QR_CODE') {
                 const qrData = paymentRequestResponse.paymentMethod?.qrCode;
                 paymentActionInfo = {
                     qrString: qrData?.channelProperties?.qrString ?? '',
-                    expirationDate: qrData?.channelProperties?.expiresAt?.toISOString() ?? new Date().toISOString(),
+                    expiresAt: qrData?.channelProperties?.expiresAt?.toISOString() ?? new Date().toISOString(),
                 } as IQrisActionInfo;
             } else if (responseType === 'EWALLET') {
                 const actions = paymentRequestResponse.actions ?? [];

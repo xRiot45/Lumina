@@ -49,6 +49,7 @@ export interface IXenditVirtualAccountParam {
         channelCode: XenditBankCode;
         channelProperties: {
             customerName: string;
+            expiresAt: string;
         };
     };
 }
@@ -58,6 +59,9 @@ export interface IXenditQrCodeParam {
     reusability: XenditReusability;
     qrCode: {
         channelCode: 'QRIS';
+        channelProperties: {
+            expiresAt: string;
+        };
     };
 }
 

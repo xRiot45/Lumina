@@ -6,11 +6,14 @@ import { OrderEntity } from '../../core/database/entities/order.entity';
 import { OrderItemEntity } from '../../core/database/entities/order-item.entity';
 import { LoggerModule } from '@lumina/shared-logger';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ScheduleModule } from '@nestjs/schedule';
+import { OrdersCron } from './cron/orders.cron';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([OrderEntity, OrderItemEntity]),
         LoggerModule,
+        TypeOrmModule.forFeature([OrderEntity, OrderItemEntity]),
+        ScheduleModule.forRoot(),
         ClientsModule.register([
             {
                 name: 'CARTS_SERVICE',
@@ -39,6 +42,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         ]),
     ],
     controllers: [OrdersController],
-    providers: [OrdersService],
+    providers: [OrdersService, OrdersCron],
 })
 export class OrdersModule {}
