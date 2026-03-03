@@ -9,7 +9,7 @@ import {
     PaymentMethod,
 } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
-import { getXenditBankCode, getXenditEwalletCode } from '@lumina/shared-utils';
+import { getXenditBankCode, getXenditEwalletCode, mapToDto } from '@lumina/shared-utils';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -37,7 +37,6 @@ export class PaymentsService {
         this.logger.log({ message: 'Processing payment charge', userId, orderId }, this.context);
 
         try {
-            // Step 1: Fetch & Validate Order
             const orderDetail = await firstValueFrom<OrderResponseDto>(
                 this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId),
             );
@@ -46,12 +45,11 @@ export class PaymentsService {
                 this.logger.warn({ message: 'Order not found', orderId }, this.context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
-                    message: `Order not found.`,
+                    message: `Order with ID ${orderId} not found.`,
                     error: 'Not Found',
                 });
             }
 
-            // Validasi Kepemilikan (Mencegah IDOR)
             if (orderDetail.userId !== userId) {
                 this.logger.warn(`Unauthorized payment attempt by user ${userId} for order ${orderId}`, this.context);
                 throw new RpcException({
@@ -61,7 +59,6 @@ export class PaymentsService {
                 });
             }
 
-            // Validasi Status Pesanan
             if (orderDetail.status !== OrderStatus.PENDING_PAYMENT) {
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_REQUEST,
@@ -70,12 +67,8 @@ export class PaymentsService {
                 });
             }
 
-            // STEP 2 ORKESTRASI XENDIT (PAYMENT REQUEST API)
-            let paymentGatewayId = '';
-            let paymentActionInfo: IPaymentActionInfo;
-
-            const selectedMethod = orderDetail?.paymentMethod as PaymentMethod;
-            const customerName = orderDetail.shippingAddress?.recipientName || 'Lumina Customer';
+            const selectedMethod = orderDetail.paymentMethod as PaymentMethod;
+            const customerName = orderDetail.shippingAddress?.recipientName ?? 'Lumina Customer';
 
             let xenditPaymentMethodParam: IXenditPaymentMethodParam;
 
@@ -90,46 +83,41 @@ export class PaymentsService {
                 case PaymentMethod.BSS_VA:
                 case PaymentMethod.CIMB_VA:
                 case PaymentMethod.PERMATA_VA:
-                case PaymentMethod.MUAMALAT_VA: {
-                    const bankCode = getXenditBankCode(selectedMethod);
+                case PaymentMethod.MUAMALAT_VA:
                     xenditPaymentMethodParam = {
                         type: 'VIRTUAL_ACCOUNT',
                         reusability: 'ONE_TIME_USE',
                         virtualAccount: {
-                            channelCode: bankCode,
+                            channelCode: getXenditBankCode(selectedMethod),
                             channelProperties: {
-                                customerName: customerName,
+                                customerName,
                             },
                         },
                     };
                     break;
-                }
+
                 case PaymentMethod.GOPAY:
                 case PaymentMethod.OVO:
                 case PaymentMethod.DANA:
                 case PaymentMethod.SHOPEEPAY:
                 case PaymentMethod.LINKAJA:
                 case PaymentMethod.ASTRAPAY: {
-                    const ewalletCode = getXenditEwalletCode(selectedMethod);
-
-                    const successUrl = `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}`;
-                    const failureUrl = `${process.env.FRONTEND_URL}/payment/failed?orderId=${orderId}`;
-
+                    const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
                     xenditPaymentMethodParam = {
                         type: 'EWALLET',
                         reusability: 'ONE_TIME_USE',
                         ewallet: {
-                            channelCode: ewalletCode,
+                            channelCode: getXenditEwalletCode(selectedMethod),
                             channelProperties: {
-                                successReturnUrl: successUrl,
-                                failureReturnUrl: failureUrl,
+                                successReturnUrl: `${baseUrl}/payment/success?orderId=${orderId}`,
+                                failureReturnUrl: `${baseUrl}/payment/failed?orderId=${orderId}`,
                             },
                         },
                     };
                     break;
                 }
 
-                case PaymentMethod.QRIS: {
+                case PaymentMethod.QRIS:
                     xenditPaymentMethodParam = {
                         type: 'QR_CODE',
                         reusability: 'ONE_TIME_USE',
@@ -138,7 +126,6 @@ export class PaymentsService {
                         },
                     };
                     break;
-                }
 
                 default:
                     throw new RpcException({
@@ -158,43 +145,47 @@ export class PaymentsService {
                 },
             });
 
-            paymentGatewayId = paymentRequestResponse?.id;
-
-            // STEP 3: MAPPING HASIL KE INTERFACE KITA
-            if (paymentRequestResponse.paymentMethod?.type === 'VIRTUAL_ACCOUNT') {
-                const vaData = paymentRequestResponse.paymentMethod.virtualAccount;
-                const vaInfo: IVirtualAccountActionInfo = {
-                    accountNumber: vaData?.channelProperties?.virtualAccountNumber || '',
-                    bankCode: vaData?.channelCode || '',
-                    expirationDate: vaData?.channelProperties?.expiresAt || new Date().toISOString(),
-                };
-
-                paymentActionInfo = vaInfo;
-            } else if (paymentRequestResponse.paymentMethod?.type === 'QR_CODE') {
-                const qrData = paymentRequestResponse.paymentMethod.qrCode;
-                const qrInfo: IQrisActionInfo = {
-                    qrString: qrData?.channelProperties?.qrString || '',
-                    expirationDate: qrData?.channelProperties?.expiresAt || new Date().toISOString(),
-                };
-
-                paymentActionInfo = qrInfo;
-            } else if (paymentRequestResponse.paymentMethod?.type === 'EWALLET') {
-                const actions = paymentRequestResponse.actions || [];
-                const webAction = actions.find((a) => a.urlType === 'WEB' || a.action === 'AUTH');
-                const mobileAction = actions.find((a) => a.urlType === 'MOBILE' || a.urlType === 'DEEPLINK');
-
-                const ewalletInfo: IEWalletActionInfo = {
-                    checkoutUrl: webAction?.url || '',
-                    mobileDeepLink: mobileAction?.url || '',
-                    qrCheckoutString: '',
-                };
-
-                paymentActionInfo = ewalletInfo;
-            } else {
-                throw new Error('Failed to parse Xendit response type');
+            if (!paymentRequestResponse || !paymentRequestResponse.id) {
+                throw new Error('Received malformed or empty response from Xendit Gateway');
             }
 
-            // STEP 4: SYNC STATE (UPDATE KE ORDERS SERVICE)
+            const paymentGatewayId = paymentRequestResponse.id;
+            const responseType = paymentRequestResponse.paymentMethod?.type;
+            let paymentActionInfo: IPaymentActionInfo;
+
+            if (responseType === 'VIRTUAL_ACCOUNT') {
+                const vaData = paymentRequestResponse.paymentMethod?.virtualAccount;
+                paymentActionInfo = {
+                    accountNumber: vaData?.channelProperties?.virtualAccountNumber ?? '',
+                    bankCode: vaData?.channelCode ?? '',
+                    expirationDate: vaData?.channelProperties?.expiresAt?.toISOString() ?? new Date().toISOString(),
+                } as IVirtualAccountActionInfo;
+            } else if (responseType === 'QR_CODE') {
+                const qrData = paymentRequestResponse.paymentMethod?.qrCode;
+                paymentActionInfo = {
+                    qrString: qrData?.channelProperties?.qrString ?? '',
+                    expirationDate: qrData?.channelProperties?.expiresAt?.toISOString() ?? new Date().toISOString(),
+                } as IQrisActionInfo;
+            } else if (responseType === 'EWALLET') {
+                const actions = paymentRequestResponse.actions ?? [];
+                const webAction = actions.find(
+                    (a) => (a.urlType as string) === 'WEB' || (a.action as string) === 'AUTH',
+                );
+
+                const mobileAction = actions.find((a) => {
+                    const type = a.urlType as string;
+                    return type === 'MOBILE' || type === 'DEEPLINK' || type === 'DEEP_LINK';
+                });
+
+                paymentActionInfo = {
+                    checkoutUrl: webAction?.url ?? '',
+                    mobileDeepLink: mobileAction?.url ?? '',
+                    qrCheckoutString: '',
+                } as IEWalletActionInfo;
+            } else {
+                throw new Error(`Failed to parse unrecognized Xendit response type: ${responseType}`);
+            }
+
             const updatePayload: UpdatePaymentInfoDto = {
                 orderId: orderId,
                 paymentGatewayId: paymentGatewayId,
@@ -202,16 +193,7 @@ export class PaymentsService {
             };
 
             await firstValueFrom(this.ordersClient.send({ cmd: 'update_payment_info' }, updatePayload));
-            const response: ChargePaymentResponseDto = {
-                orderId: orderId,
-                paymentGatewayId: paymentGatewayId,
-                paymentMethod: orderDetail.paymentMethod,
-                totalAmount: orderDetail.totalAmount,
-                status: orderDetail.status,
-                paymentActionInfo: paymentActionInfo,
-            };
-
-            return response;
+            return mapToDto(ChargePaymentResponseDto, updatePayload);
         } catch (error: unknown) {
             if (error instanceof RpcException) {
                 throw error;
@@ -224,7 +206,7 @@ export class PaymentsService {
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'An error occurred while creating the order',
+                message: 'An error occurred while communicating with the payment gateway',
                 error: 'Internal Server Error',
             });
         }
