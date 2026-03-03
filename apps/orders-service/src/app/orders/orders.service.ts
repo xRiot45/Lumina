@@ -14,7 +14,7 @@ import {
 } from '@lumina/shared-interfaces';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { CreateOrderDto, OrderResponseDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
+import { CreateOrderDto, OrderResponseDto, UpdateOrderStatusDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
 
 @Injectable()
 export class OrdersService {
@@ -239,6 +239,56 @@ export class OrdersService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while updating payment info',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async updateOrderStatus(payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+        this.logger.log(`Received command to update order ${payload.orderId} to status ${payload.status}`);
+
+        try {
+            const order = await this.orderRepository.findOne({
+                where: { id: payload.orderId },
+            });
+
+            if (!order) {
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: `Order with ID ${payload.orderId} not found.`,
+                });
+            }
+
+            if (order.status === OrderStatus.CANCELLED) {
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: `Cannot change status. Order ${order.id} is already cancelled.`,
+                });
+            }
+
+            order.status = payload.status;
+            if (payload.paidAt) {
+                order.paidAt = new Date(payload.paidAt);
+            }
+
+            const updatedOrder = await this.orderRepository.save(order);
+
+            this.logger.log(`Order ${updatedOrder.id} status successfully changed to ${updatedOrder.status}`);
+
+            return mapToDto(OrderResponseDto, updatedOrder);
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Failed to update order status: ${errorMessage}`, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while updating order status',
                 error: 'Internal Server Error',
             });
         }

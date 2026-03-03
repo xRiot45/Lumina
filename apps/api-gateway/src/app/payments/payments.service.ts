@@ -4,6 +4,9 @@ import {
     ChargePaymentResponseDto,
     GetPaymentInfoPaylaodDto,
     GetPaymentInfoResponseDto,
+    PayOrderDto,
+    PayOrderPayloadDto,
+    PayOrderResponseDto,
 } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
@@ -84,6 +87,57 @@ export class PaymentsService {
             const response = await firstValueFrom(this.paymentsClient.send({ cmd: 'get_payment_info' }, payload));
 
             return mapToDto(GetPaymentInfoResponseDto, response);
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Payments Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async payOrder(userId: string, dto: PayOrderDto): Promise<PayOrderResponseDto> {
+        this.logger.log(`Initiating pay action for order ${dto.orderId} by user ${userId}`, this.context);
+
+        try {
+            const payload: PayOrderPayloadDto = {
+                userId,
+                data: dto,
+            };
+
+            const response = await firstValueFrom(this.paymentsClient.send({ cmd: 'pay_order' }, payload));
+            return mapToDto(PayOrderResponseDto, response);
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Payments Microservice: ${JSON.stringify(error)}`);
 

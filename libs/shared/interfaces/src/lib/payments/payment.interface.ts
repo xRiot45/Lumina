@@ -1,3 +1,4 @@
+import { OrderStatus } from '../enums/order-status.enum';
 import { IPaymentActionInfo } from './payment-action.interface';
 
 export interface IChargePayment {
@@ -94,4 +95,15 @@ export interface IGetPaymentInfoResponse {
     paidAt?: Date | string | null;
     canceledAt?: Date | string | null;
     canceledReason?: string | null;
+}
+
+export interface IPayOrderRequest {
+    orderId: string;
+}
+
+export interface IPayOrderResponse {
+    orderId: string;
+    orderNumber: string;
+    status: OrderStatus;
+    paidAt: Date | string;
 }

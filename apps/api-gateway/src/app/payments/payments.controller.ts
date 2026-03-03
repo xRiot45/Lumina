@@ -10,6 +10,8 @@ import {
     ChargePaymentDto,
     ChargePaymentResponseDto,
     GetPaymentInfoResponseDto,
+    PayOrderDto,
+    PayOrderResponseDto,
 } from '@lumina/shared-dto';
 
 @Controller('payments')
@@ -47,6 +49,23 @@ export class PaymentsController {
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
             message: 'Payment info found successfully',
+            data: result,
+        };
+    }
+
+    @Post('pay')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async payOrder(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Body() dto: PayOrderDto,
+    ): Promise<BaseResponseDto<PayOrderResponseDto>> {
+        const result = await this.paymentsService.payOrder(user?.id, dto);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Order paid successfully',
             data: result,
         };
     }

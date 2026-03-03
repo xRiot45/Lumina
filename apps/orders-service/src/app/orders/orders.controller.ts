@@ -1,11 +1,20 @@
-import { CreateOrderPayloadDto, OrderResponseDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
+import {
+    CreateOrderPayloadDto,
+    OrderResponseDto,
+    UpdateOrderStatusDto,
+    UpdatePaymentInfoDto,
+} from '@lumina/shared-dto';
 import { Controller } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { LoggerService } from '@lumina/shared-logger';
 
 @Controller()
 export class OrdersController {
-    constructor(private readonly ordersService: OrdersService) {}
+    constructor(
+        private readonly ordersService: OrdersService,
+        private readonly logger: LoggerService,
+    ) {}
 
     @MessagePattern({ cmd: 'create_order' })
     async createOrder(@Payload() payload: CreateOrderPayloadDto): Promise<OrderResponseDto> {
@@ -19,6 +28,11 @@ export class OrdersController {
 
     @MessagePattern({ cmd: 'update_payment_info' })
     async updatePaymentInfo(@Payload() payload: UpdatePaymentInfoDto) {
-        return this.ordersService.updatePaymentInfo(payload);
+        return await this.ordersService.updatePaymentInfo(payload);
+    }
+
+    @MessagePattern({ cmd: 'update_order_status' })
+    async updateOrderStatus(@Payload() payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+        return await this.ordersService.updateOrderStatus(payload);
     }
 }

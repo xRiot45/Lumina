@@ -88,3 +88,10 @@ export interface ICartItemSnapshot {
 export interface ICartResponseSnapshot {
     data: ICartItemSnapshot[];
 }
+
+export interface IUpdateOrderStatus {
+    orderId: string;
+    status: OrderStatus;
+    paidAt?: string;
+    canceledReason?: string;
+}

@@ -3,6 +3,8 @@ import {
     ChargePaymentResponseDto,
     GetPaymentInfoPaylaodDto,
     GetPaymentInfoResponseDto,
+    PayOrderPayloadDto,
+    PayOrderResponseDto,
 } from '@lumina/shared-dto';
 
 import { Controller } from '@nestjs/common';
@@ -21,5 +23,10 @@ export class PaymentsController {
     @MessagePattern({ cmd: 'get_payment_info' })
     async getPaymentInfo(@Payload() payload: GetPaymentInfoPaylaodDto): Promise<GetPaymentInfoResponseDto> {
         return await this.paymentsService.getPaymentInfo(payload?.userId, payload?.orderId);
+    }
+
+    @MessagePattern({ cmd: 'pay_order' })
+    async payOrder(@Payload() payload: PayOrderPayloadDto): Promise<PayOrderResponseDto> {
+        return await this.paymentsService.payOrder(payload?.userId, payload?.data?.orderId);
     }
 }

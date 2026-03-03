@@ -12,6 +12,7 @@ import type {
     IOrderItemResponse,
     IOrderResponse,
     IShippingAddressSnapshot,
+    IUpdateOrderStatus,
 } from '@lumina/shared-interfaces';
 
 // For API Gateway
@@ -121,3 +122,32 @@ export class OrderResponseDto implements IOrderResponse {
     @Expose() createdAt!: Date;
     @Expose() updatedAt!: Date;
 }
+
+export class UpdateOrderStatusDto implements IUpdateOrderStatus {
+    @Expose()
+    @IsNotEmpty()
+    @IsUUID()
+    orderId!: string;
+
+    @Expose()
+    @IsNotEmpty()
+    @IsEnum(OrderStatus)
+    status!: OrderStatus;
+
+    @Expose()
+    @IsOptional()
+    @IsString()
+    paidAt?: string;
+}
+
+// export class UpdateOrderStatusPayloadDto {
+//     @IsUUID('4', { message: 'User ID must be a valid UUID' })
+//     @IsNotEmpty({ message: 'User ID is required' })
+//     @IsString()
+//     userId!: string;
+
+//     @IsNotEmpty({ message: 'Order data is required' })
+//     @ValidateNested()
+//     @Type(() => UpdateOrderStatusDto)
+//     data!: UpdateOrderStatusDto;
+// }

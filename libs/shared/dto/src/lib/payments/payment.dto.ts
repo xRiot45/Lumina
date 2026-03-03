@@ -1,6 +1,13 @@
 import { IsNotEmpty, IsObject, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { IChargePayment, IUpdatePaymentInfo } from '@lumina/shared-interfaces';
-import type { IChargePaymentResponse, IGetPaymentInfoResponse, IPaymentActionInfo } from '@lumina/shared-interfaces';
+import type {
+    IChargePaymentResponse,
+    IGetPaymentInfoResponse,
+    IPaymentActionInfo,
+    IPayOrderRequest,
+    IPayOrderResponse,
+    OrderStatus,
+} from '@lumina/shared-interfaces';
 import { Expose, Transform, Type } from 'class-transformer';
 
 // DTO For API-Gateway
@@ -98,4 +105,28 @@ export class GetPaymentInfoResponseDto implements IGetPaymentInfoResponse {
 
     @Expose()
     canceledReason?: string | null;
+}
+
+export class PayOrderDto implements IPayOrderRequest {
+    @IsUUID('4', { message: 'Order ID must be a valid UUID' })
+    @IsNotEmpty()
+    orderId!: string;
+}
+
+export class PayOrderResponseDto implements IPayOrderResponse {
+    @Expose() orderId!: string;
+    @Expose() orderNumber!: string;
+    @Expose() status!: OrderStatus;
+    @Expose() paidAt!: Date | string;
+}
+
+export class PayOrderPayloadDto {
+    @IsUUID('4', { message: 'User ID must be a valid UUID' })
+    @IsNotEmpty()
+    userId!: string;
+
+    @ValidateNested()
+    @Type(() => PayOrderDto)
+    @IsNotEmpty()
+    data!: PayOrderDto;
 }
