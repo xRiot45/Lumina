@@ -20,7 +20,6 @@ export interface IChargePaymentResponse {
 }
 
 export type XenditReusability = 'ONE_TIME_USE' | 'MULTIPLE_USE';
-
 export type XenditBankCode =
     | 'BCA'
     | 'MANDIRI'
@@ -30,7 +29,18 @@ export type XenditBankCode =
     | 'CIMB'
     | 'BSI'
     | 'BJB'
-    | 'SAHABAT_SAMPOERNA';
+    | 'BNC'
+    | 'BSS'
+    | 'MUAMALAT';
+export type XenditEwalletChannelCode =
+    | 'DANA'
+    | 'OVO'
+    | 'GOPAY'
+    | 'SHOPEEPAY'
+    | 'ASTRAPAY'
+    | 'JENIUSPAY'
+    | 'LINKAJA'
+    | 'NEXCASH';
 
 export interface IXenditVirtualAccountParam {
     type: 'VIRTUAL_ACCOUNT';
@@ -51,4 +61,16 @@ export interface IXenditQrCodeParam {
     };
 }
 
-export type IXenditPaymentMethodParam = IXenditVirtualAccountParam | IXenditQrCodeParam;
+export interface IXenditEwalletParam {
+    type: 'EWALLET';
+    reusability: XenditReusability;
+    ewallet: {
+        channelCode: XenditEwalletChannelCode;
+        channelProperties: {
+            successReturnUrl: string;
+            failureReturnUrl?: string;
+        };
+    };
+}
+
+export type IXenditPaymentMethodParam = IXenditVirtualAccountParam | IXenditQrCodeParam | IXenditEwalletParam;

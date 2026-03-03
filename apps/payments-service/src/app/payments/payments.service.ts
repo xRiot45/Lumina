@@ -1,5 +1,6 @@
 import { ChargePaymentResponseDto, OrderResponseDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
 import {
+    IEWalletActionInfo,
     IPaymentActionInfo,
     IQrisActionInfo,
     IVirtualAccountActionInfo,
@@ -8,11 +9,12 @@ import {
     PaymentMethod,
 } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
+import { getXenditBankCode, getXenditEwalletCode } from '@lumina/shared-utils';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { Xendit } from 'xendit-node';
-import { getXenditBankCode } from '@lumina/shared-utils';
+import { PaymentMethodParameters } from 'xendit-node/payment_request/models';
 
 @Injectable()
 export class PaymentsService {
@@ -82,11 +84,13 @@ export class PaymentsService {
                 case PaymentMethod.MANDIRI_VA:
                 case PaymentMethod.BRIVA:
                 case PaymentMethod.BNI_VA:
-                case PaymentMethod.PERMATA_VA:
-                case PaymentMethod.CIMB_VA:
-                case PaymentMethod.BSI_VA:
                 case PaymentMethod.BJB_VA:
-                case PaymentMethod.SAHABAT_SAMPOERNA_VA: {
+                case PaymentMethod.BNC_VA:
+                case PaymentMethod.BSI_VA:
+                case PaymentMethod.BSS_VA:
+                case PaymentMethod.CIMB_VA:
+                case PaymentMethod.PERMATA_VA:
+                case PaymentMethod.MUAMALAT_VA: {
                     const bankCode = getXenditBankCode(selectedMethod);
                     xenditPaymentMethodParam = {
                         type: 'VIRTUAL_ACCOUNT',
@@ -100,6 +104,31 @@ export class PaymentsService {
                     };
                     break;
                 }
+                case PaymentMethod.GOPAY:
+                case PaymentMethod.OVO:
+                case PaymentMethod.DANA:
+                case PaymentMethod.SHOPEEPAY:
+                case PaymentMethod.LINKAJA:
+                case PaymentMethod.ASTRAPAY: {
+                    const ewalletCode = getXenditEwalletCode(selectedMethod);
+
+                    const successUrl = `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}`;
+                    const failureUrl = `${process.env.FRONTEND_URL}/payment/failed?orderId=${orderId}`;
+
+                    xenditPaymentMethodParam = {
+                        type: 'EWALLET',
+                        reusability: 'ONE_TIME_USE',
+                        ewallet: {
+                            channelCode: ewalletCode,
+                            channelProperties: {
+                                successReturnUrl: successUrl,
+                                failureReturnUrl: failureUrl,
+                            },
+                        },
+                    };
+                    break;
+                }
+
                 case PaymentMethod.QRIS: {
                     xenditPaymentMethodParam = {
                         type: 'QR_CODE',
@@ -110,6 +139,7 @@ export class PaymentsService {
                     };
                     break;
                 }
+
                 default:
                     throw new RpcException({
                         statusCode: HttpStatus.BAD_REQUEST,
@@ -124,7 +154,7 @@ export class PaymentsService {
                     referenceId: orderDetail.orderNumber,
                     currency: 'IDR',
                     amount: orderDetail.totalAmount,
-                    paymentMethod: xenditPaymentMethodParam,
+                    paymentMethod: xenditPaymentMethodParam as PaymentMethodParameters,
                 },
             });
 
@@ -138,6 +168,7 @@ export class PaymentsService {
                     bankCode: vaData?.channelCode || '',
                     expirationDate: vaData?.channelProperties?.expiresAt || new Date().toISOString(),
                 };
+
                 paymentActionInfo = vaInfo;
             } else if (paymentRequestResponse.paymentMethod?.type === 'QR_CODE') {
                 const qrData = paymentRequestResponse.paymentMethod.qrCode;
@@ -145,7 +176,20 @@ export class PaymentsService {
                     qrString: qrData?.channelProperties?.qrString || '',
                     expirationDate: qrData?.channelProperties?.expiresAt || new Date().toISOString(),
                 };
+
                 paymentActionInfo = qrInfo;
+            } else if (paymentRequestResponse.paymentMethod?.type === 'EWALLET') {
+                const actions = paymentRequestResponse.actions || [];
+                const webAction = actions.find((a) => a.urlType === 'WEB' || a.action === 'AUTH');
+                const mobileAction = actions.find((a) => a.urlType === 'MOBILE' || a.urlType === 'DEEPLINK');
+
+                const ewalletInfo: IEWalletActionInfo = {
+                    checkoutUrl: webAction?.url || '',
+                    mobileDeepLink: mobileAction?.url || '',
+                    qrCheckoutString: '',
+                };
+
+                paymentActionInfo = ewalletInfo;
             } else {
                 throw new Error('Failed to parse Xendit response type');
             }
