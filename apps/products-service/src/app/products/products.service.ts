@@ -2,7 +2,6 @@ import {
     CreateProductDto,
     PaginationDto,
     ProductResponseDto,
-    ReduceStockEventDto,
     StockReductionItemDto,
     UpdateProductDto,
 } from '@lumina/shared-dto';
