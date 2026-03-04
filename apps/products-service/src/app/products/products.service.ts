@@ -1,4 +1,11 @@
-import { CreateProductDto, PaginationDto, ProductResponseDto, UpdateProductDto } from '@lumina/shared-dto';
+import {
+    CreateProductDto,
+    PaginationDto,
+    ProductResponseDto,
+    ReduceStockEventDto,
+    StockReductionItemDto,
+    UpdateProductDto,
+} from '@lumina/shared-dto';
 import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { autoGenerateSlug, isDatabaseError } from '@lumina/shared-utils';
@@ -393,6 +400,43 @@ export class ProductsService {
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while deleting the product',
                 error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async handleReduceStock(items: StockReductionItemDto[]): Promise<void> {
+        this.logger.log(`[STOCK] Starting reduction for ${items.length} items`);
+
+        try {
+            await Promise.all(
+                items.map(async (item) => {
+                    this.logger.debug(`Reducing Variant: ${item.variantId} by Quantity: ${item.quantity}`);
+
+                    const result = await this.productVariantRepository.decrement(
+                        {
+                            id: item.variantId,
+                        },
+                        'stock',
+                        item.quantity,
+                    );
+
+                    if (result.affected === 0) {
+                        this.logger.warn(
+                            `[STOCK WARNING] Variant ${item.variantId} not found or mismatch with Product ${item.productId}`,
+                        );
+                    }
+                }),
+            );
+
+            this.logger.log(`[STOCK SUCCESS] All items processed successfully.`);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            this.logger.error(`[STOCK ERROR] Failed to reduce stock: ${errorMessage}`);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Critical error during stock reduction.',
             });
         }
     }

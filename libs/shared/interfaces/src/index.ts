@@ -33,6 +33,7 @@ export * from './lib/payments/payment-action.interface';
 
 // Product Variants
 export * from './lib/products/product_variants/product-variant.interface';
+export * from './lib/products/product_variants/stock-reduction.interface';
 
 // Enums
 export * from './lib/enums/user-role.enum';

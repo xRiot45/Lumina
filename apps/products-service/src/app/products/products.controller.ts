@@ -1,4 +1,10 @@
-import { CreateProductDto, PaginationDto, ProductResponseDto, UpdateProductPayloadDto } from '@lumina/shared-dto';
+import {
+    CreateProductDto,
+    PaginationDto,
+    ProductResponseDto,
+    ReduceStockEventDto,
+    UpdateProductPayloadDto,
+} from '@lumina/shared-dto';
 import type {
     IDeleteProductPayload,
     IFindProductByIdPayload,
@@ -6,7 +12,7 @@ import type {
     IPaginatedResponse,
 } from '@lumina/shared-interfaces';
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { ProductsService } from './products.service';
 
 @Controller()
@@ -41,5 +47,10 @@ export class ProductsController {
     @MessagePattern({ cmd: 'delete_product' })
     async remove(@Payload() payload: IDeleteProductPayload): Promise<{ success: boolean }> {
         return await this.productsService.remove(payload.id);
+    }
+
+    @EventPattern('reduce_product_variant_stock')
+    async reduceProductVariantStock(@Payload() payload: ReduceStockEventDto) {
+        return await this.productsService.handleReduceStock(payload.items);
     }
 }

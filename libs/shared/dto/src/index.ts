@@ -14,6 +14,10 @@ export * from './lib/products/product_categories/create-product-category.dto';
 export * from './lib/products/product_categories/product-category-response.dto';
 export * from './lib/products/product_categories/update-product-category.dto';
 
+// Products Variants DTO
+export * from './lib/products/product_variants/product-variant-response.dto';
+export * from './lib/products/product_variants/stock-reduction.dto';
+
 // Carts DTO
 export * from './lib/carts/cart.dto';
 

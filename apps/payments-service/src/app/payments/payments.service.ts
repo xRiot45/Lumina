@@ -3,6 +3,7 @@ import {
     GetPaymentInfoResponseDto,
     OrderResponseDto,
     PayOrderResponseDto,
+    ReduceStockEventDto,
     UpdateOrderStatusDto,
     UpdatePaymentInfoDto,
 } from '@lumina/shared-dto';
@@ -22,7 +23,8 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { Xendit } from 'xendit-node';
 import { PaymentMethodParameters } from 'xendit-node/payment_request/models';
-import axios from 'axios';
+import { AxiosError } from 'axios';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class PaymentsService {
@@ -31,7 +33,9 @@ export class PaymentsService {
 
     constructor(
         @Inject('ORDERS_SERVICE') private readonly ordersClient: ClientProxy,
+        @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
         private readonly logger: LoggerService,
+        private readonly httpService: HttpService,
     ) {
         const secretKey = process.env.XENDIT_SECRET_KEY || '';
         if (!secretKey) {
@@ -283,15 +287,15 @@ export class PaymentsService {
     }
 
     async payOrder(userId: string, orderId: string): Promise<PayOrderResponseDto> {
-        this.logger.log({ message: 'Paying order', userId, orderId }, this.context);
+        this.logger.log(`[PAYMENT] Initiating payOrder: ${orderId} for User: ${userId}`);
 
         try {
             const orderDetail = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
+
             if (!orderDetail) {
-                this.logger.warn({ message: 'Order not found for payment', orderId }, this.context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
-                    message: `Order with ID ${orderId} not found.`,
+                    message: 'Order not found.',
                     error: 'Not Found',
                 });
             }
@@ -299,58 +303,46 @@ export class PaymentsService {
             if (orderDetail.userId !== userId) {
                 throw new RpcException({
                     statusCode: HttpStatus.FORBIDDEN,
-                    message: `You do not have permission to pay for this order.`,
+                    message: 'Unauthorized access to this order.',
                     error: 'Forbidden',
                 });
             }
 
-            if (orderDetail.status !== OrderStatus.PENDING_PAYMENT) {
+            if (orderDetail.status !== OrderStatus.PENDING_PAYMENT || !orderDetail.paymentGatewayId) {
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_REQUEST,
-                    message: `Order cannot be paid. Current status is ${orderDetail.status}`,
+                    message: 'Order is not in a payable state or missing Payment Gateway ID.',
                     error: 'Bad Request',
                 });
             }
 
-            if (!orderDetail.paymentGatewayId) {
-                throw new RpcException({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    message: `This order has not been charged to Xendit yet.`,
-                    error: 'Bad Request',
-                });
-            }
+            const authHeader = Buffer.from(`${process.env.XENDIT_SECRET_KEY}:`).toString('base64');
+            const simulationUrl = `${process.env.XENDIT_URL}/v3/payment_requests/${orderDetail.paymentGatewayId}/simulate`;
 
-            this.logger.log(`Triggering Manual Simulation via Axios for ID: ${orderDetail.paymentGatewayId}`);
-
+            this.logger.log(`[XENDIT] Triggering simulation for: ${orderDetail.paymentGatewayId}`);
             try {
-                const xenditKey = process.env.XENDIT_SECRET_KEY;
-                const authHeader = Buffer.from(`${xenditKey}:`).toString('base64');
-
-                await axios.post(
-                    `https://api.xendit.co/v3/payment_requests/${orderDetail.paymentGatewayId}/simulate`,
+                await this.httpService.axiosRef.post(
+                    simulationUrl,
                     { amount: orderDetail.totalAmount },
                     {
                         headers: {
                             Authorization: `Basic ${authHeader}`,
                             'Content-Type': 'application/json',
-                            'api-version': '2024-11-11',
+                            'api-version': process.env.XENDIT_API_VERSION,
                         },
                     },
                 );
-
-                this.logger.log(`Simulation successful for ID: ${orderDetail.paymentGatewayId}`);
-            } catch (simError: any) {
-                const xenditErrorMessage = simError.response?.data?.message || simError.message;
-                this.logger.error(`Axios Simulation Error: ${xenditErrorMessage}`, '', this.context);
-
+            } catch (err) {
+                const axiosError = err as AxiosError<{ message?: string }>;
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_GATEWAY,
-                    message: `Failed to simulate payment: ${xenditErrorMessage}`,
+                    message: `Xendit Simulation Failed: ${axiosError.response?.data?.message || axiosError.message}`,
                     error: 'Bad Gateway',
                 });
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 800));
+
             const xenditStatus = await this.xenditClient.PaymentRequest.getPaymentRequestByID({
                 paymentRequestId: orderDetail.paymentGatewayId,
             });
@@ -358,30 +350,40 @@ export class PaymentsService {
             if (xenditStatus.status !== 'SUCCEEDED') {
                 throw new RpcException({
                     statusCode: HttpStatus.PAYMENT_REQUIRED,
-                    message: `Payment not completed. Status: ${xenditStatus.status}`,
+                    message: `Payment not completed. Current status: ${xenditStatus.status}`,
                 });
             }
 
-            const currentTime = new Date().toISOString();
             const updatePayload: UpdateOrderStatusDto = {
                 orderId,
                 status: OrderStatus.PAID,
-                paidAt: currentTime,
+                paidAt: new Date().toISOString(),
             };
 
             const updatedOrder = await firstValueFrom(
                 this.ordersClient.send({ cmd: 'update_order_status' }, updatePayload),
             );
 
-            this.logger.log(`Order ${orderId} successfully marked as PAID.`);
+            const stockPayload: ReduceStockEventDto = {
+                orderId,
+                items: orderDetail.items.map((item: { productId: string; variantId: string; quantity: number }) => ({
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                })),
+            };
+
+            this.productsClient.emit('reduce_product_variant_stock', stockPayload);
+            this.logger.log(`[SUCCESS] Order ${orderId} payment finalized.`);
 
             return mapToDto(PayOrderResponseDto, updatedOrder);
         } catch (error: unknown) {
             if (error instanceof RpcException) throw error;
-            this.logger.error(`Failed to process payOrder: ${error instanceof Error ? error.message : String(error)}`);
+
+            this.logger.error(`[FATAL] Error in payOrder: ${error instanceof Error ? error.message : String(error)}`);
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'An error occurred while finalizing the payment.',
+                message: 'An unexpected error occurred during payment processing.',
             });
         }
     }
