@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Headers, Post, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
-import { CurrentUser, Roles } from '@lumina/shared-common';
+import { CurrentUser, Public, Roles } from '@lumina/shared-common';
 import { UserRole } from '@lumina/shared-interfaces';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -12,6 +12,7 @@ import {
     GetPaymentInfoResponseDto,
     PayOrderDto,
     PayOrderResponseDto,
+    XenditWebhookDto,
 } from '@lumina/shared-dto';
 
 @Controller('payments')
@@ -65,8 +66,16 @@ export class PaymentsController {
             success: true,
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
-            message: 'Order paid successfully',
+            message:
+                'Payment simulation successfully triggered. The system is awaiting Webhook confirmation from Xendit.',
             data: result,
         };
+    }
+
+    @Public()
+    @Post('webhook/xendit')
+    @HttpCode(HttpStatus.OK)
+    async handleXenditWebhook(@Headers('x-callback-token') callbackToken: string, @Body() dto: any): Promise<void> {
+        await this.paymentsService.handleXenditWebhook(callbackToken, dto);
     }
 }

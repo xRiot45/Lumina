@@ -5,11 +5,12 @@ import {
     GetPaymentInfoResponseDto,
     PayOrderPayloadDto,
     PayOrderResponseDto,
+    XenditWebhookDto,
 } from '@lumina/shared-dto';
 
 import { Controller } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller()
 export class PaymentsController {
@@ -28,5 +29,10 @@ export class PaymentsController {
     @MessagePattern({ cmd: 'pay_order' })
     async payOrder(@Payload() payload: PayOrderPayloadDto): Promise<PayOrderResponseDto> {
         return await this.paymentsService.payOrder(payload?.userId, payload?.data?.orderId);
+    }
+
+    @EventPattern('process_xendit_webhook')
+    async handleXenditWebhook(@Payload() payload: { callbackToken: string; data: XenditWebhookDto }): Promise<void> {
+        return await this.paymentsService.handleXenditWebhook(payload?.callbackToken, payload?.data);
     }
 }

@@ -6,6 +6,7 @@ import {
     ReduceStockEventDto,
     UpdateOrderStatusDto,
     UpdatePaymentInfoDto,
+    XenditWebhookDto,
 } from '@lumina/shared-dto';
 import {
     IEWalletActionInfo,
@@ -287,7 +288,15 @@ export class PaymentsService {
     }
 
     async payOrder(userId: string, orderId: string): Promise<PayOrderResponseDto> {
-        this.logger.log(`[PAYMENT] Initiating payOrder: ${orderId} for User: ${userId}`);
+        if (process.env.NODE_ENV === 'production') {
+            throw new RpcException({
+                statusCode: HttpStatus.FORBIDDEN,
+                message: 'Simulasi pembayaran dinonaktifkan di lingkungan Production.',
+                error: 'Forbidden',
+            });
+        }
+
+        this.logger.log(`[PAYMENT] Initiating simulated payOrder: ${orderId} for User: ${userId}`);
 
         try {
             const orderDetail = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
@@ -320,6 +329,7 @@ export class PaymentsService {
             const simulationUrl = `${process.env.XENDIT_URL}/v3/payment_requests/${orderDetail.paymentGatewayId}/simulate`;
 
             this.logger.log(`[XENDIT] Triggering simulation for: ${orderDetail.paymentGatewayId}`);
+
             try {
                 await this.httpService.axiosRef.post(
                     simulationUrl,
@@ -341,28 +351,69 @@ export class PaymentsService {
                 });
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 800));
+            this.logger.log(`Simulation triggered for Order ${orderId}. Waiting for webhook...`);
 
-            const xenditStatus = await this.xenditClient.PaymentRequest.getPaymentRequestByID({
-                paymentRequestId: orderDetail.paymentGatewayId,
+            const responsePayload: PayOrderResponseDto = {
+                orderId: orderId,
+                paymentGatewayId: orderDetail.paymentGatewayId,
+                expectedStatus: OrderStatus.PAID,
+            };
+
+            return mapToDto(PayOrderResponseDto, responsePayload);
+        } catch (error: unknown) {
+            if (error instanceof RpcException) throw error;
+
+            this.logger.error(`Error in payOrder: ${error instanceof Error ? error.message : String(error)}`);
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An unexpected error occurred during payment processing.',
             });
+        }
+    }
 
-            if (xenditStatus.status !== 'SUCCEEDED') {
-                throw new RpcException({
-                    statusCode: HttpStatus.PAYMENT_REQUIRED,
-                    message: `Payment not completed. Current status: ${xenditStatus.status}`,
-                });
+    async handleXenditWebhook(callbackToken: string, payload: XenditWebhookDto) {
+        try {
+            const expectedToken = process.env.XENDIT_WEBHOOK_TOKEN;
+            if (callbackToken !== expectedToken) {
+                this.logger.error(`Invalid Callback Token. Possible attack from outside!`, this.context);
+                return;
+            }
+
+            if (payload?.event !== 'payment_request.succeeded') {
+                this.logger.log(`Ignore type events: ${payload.event}`, this.context);
+                return;
+            }
+
+            const orderId = payload?.data?.reference_id;
+            const paymentGatewayId = payload?.data?.id;
+
+            this.logger.log(`Processing successful payment for Order: ${orderId}`, this.context);
+
+            const orderDetail = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
+
+            if (!orderDetail) {
+                this.logger.error(`Order ${orderId} tidak ditemukan di database.`, this.context);
+                return;
+            }
+
+            if (orderDetail.status === OrderStatus.PAID) {
+                this.logger.log(`Order ${orderId} SUDAH DIBAYAR sebelumnya. Mengabaikan webhook ganda.`, this.context);
+                return;
+            }
+
+            if (orderDetail.paymentGatewayId !== paymentGatewayId) {
+                this.logger.error(`Mismatch paymentGatewayId untuk Order ${orderId}.`, this.context);
+                return;
             }
 
             const updatePayload: UpdateOrderStatusDto = {
-                orderId,
+                orderId: orderId,
                 status: OrderStatus.PAID,
                 paidAt: new Date().toISOString(),
             };
 
-            const updatedOrder = await firstValueFrom(
-                this.ordersClient.send({ cmd: 'update_order_status' }, updatePayload),
-            );
+            await firstValueFrom(this.ordersClient.send({ cmd: 'update_order_status' }, updatePayload));
+            this.logger.log(`Status Order ${orderId} berhasil diupdate menjadi PAID.`, this.context);
 
             const stockPayload: ReduceStockEventDto = {
                 orderId,
@@ -374,17 +425,11 @@ export class PaymentsService {
             };
 
             this.productsClient.emit('reduce_product_variant_stock', stockPayload);
-            this.logger.log(`[SUCCESS] Order ${orderId} payment finalized.`);
-
-            return mapToDto(PayOrderResponseDto, updatedOrder);
+            this.logger.log(`Event pengurangan stok dikirim untuk Order ${orderId}.`, this.context);
         } catch (error: unknown) {
-            if (error instanceof RpcException) throw error;
-
-            this.logger.error(`[FATAL] Error in payOrder: ${error instanceof Error ? error.message : String(error)}`);
-            throw new RpcException({
-                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'An unexpected error occurred during payment processing.',
-            });
+            this.logger.error(
+                `[ERROR] Error in handleXenditWebhook: ${error instanceof Error ? error.message : String(error)}`,
+            );
         }
     }
 }

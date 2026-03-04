@@ -5,8 +5,6 @@ import type {
     IGetPaymentInfoResponse,
     IPaymentActionInfo,
     IPayOrderRequest,
-    IPayOrderResponse,
-    OrderStatus,
 } from '@lumina/shared-interfaces';
 import { Expose, Transform, Type } from 'class-transformer';
 
@@ -113,11 +111,15 @@ export class PayOrderDto implements IPayOrderRequest {
     orderId!: string;
 }
 
-export class PayOrderResponseDto implements IPayOrderResponse {
-    @Expose() orderId!: string;
-    @Expose() orderNumber!: string;
-    @Expose() status!: OrderStatus;
-    @Expose() paidAt!: Date | string;
+export class PayOrderResponseDto {
+    @Expose()
+    orderId!: string;
+
+    @Expose()
+    paymentGatewayId!: string;
+
+    @Expose()
+    expectedStatus!: string;
 }
 
 export class PayOrderPayloadDto {
