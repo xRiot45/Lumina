@@ -12,6 +12,7 @@ import {
     GetPaymentInfoResponseDto,
     PayOrderDto,
     PayOrderResponseDto,
+    SyncPaymentStatusResponseDto,
 } from '@lumina/shared-dto';
 
 @Controller('payments')
@@ -79,5 +80,21 @@ export class PaymentsController {
         @Body() dto: IXenditWebhook,
     ): Promise<void> {
         await this.paymentsService.handleXenditWebhook(callbackToken, dto);
+    }
+
+    @Post('order/:orderId/sync')
+    @HttpCode(HttpStatus.OK)
+    async syncPaymentStatus(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('orderId') orderId: string,
+    ): Promise<BaseResponseDto<SyncPaymentStatusResponseDto>> {
+        const result = await this.paymentsService.syncPaymentStatus(user?.id, orderId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Payment status synced successfully',
+            data: result,
+        };
     }
 }

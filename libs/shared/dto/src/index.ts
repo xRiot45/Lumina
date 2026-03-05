@@ -27,6 +27,7 @@ export * from './lib/orders/order.dto';
 // Payments DTO
 export * from './lib/payments/payment.dto';
 export * from './lib/payments/xendit-webhook.dto';
+export * from './lib/payments/sync-payment.dto';
 
 // Users DTO
 export * from './lib/users/user-response.dto';

@@ -5,6 +5,7 @@ import {
     PayOrderResponseDto,
     ReduceStockEventDto,
     StockReductionItemDto,
+    SyncPaymentStatusResponseDto,
     UpdateOrderStatusDto,
     UpdatePaymentInfoDto,
     XenditWebhookDto,
@@ -22,7 +23,7 @@ import { LoggerService } from '@lumina/shared-logger';
 import { getXenditBankCode, getXenditEwalletCode, mapToDto } from '@lumina/shared-utils';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom } from 'rxjs';
 import { Xendit } from 'xendit-node';
 import { PaymentMethodParameters } from 'xendit-node/payment_request/models';
 import { AxiosError } from 'axios';
@@ -455,6 +456,114 @@ export class PaymentsService {
             const errorStack = error instanceof Error ? error.stack : undefined;
 
             this.logger.error(`Webhook processing failed: ${errorMessage}`, errorStack);
+        }
+    }
+
+    async syncPaymentStatus(userId: string, orderId: string): Promise<SyncPaymentStatusResponseDto> {
+        this.logger.log(`Starting manual sync for Order ID: ${orderId}`);
+
+        try {
+            const orderDetail = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
+            if (!orderDetail) {
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: 'Order not found in database',
+                });
+            }
+
+            if (orderDetail.userId !== userId) {
+                throw new RpcException({
+                    statusCode: HttpStatus.FORBIDDEN,
+                    message: 'Unauthorized access to this order',
+                });
+            }
+
+            if (!orderDetail.paymentGatewayId) {
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: 'This order does not have an active payment request yet',
+                });
+            }
+
+            if (orderDetail.status === OrderStatus.PAID) {
+                this.logger.log(`Order [${orderId}] is already PAID in database. Sync bypassed.`);
+                return {
+                    status: OrderStatus.PAID,
+                    isChanged: false,
+                };
+            }
+
+            this.logger.log(`Fetching status from Xendit API for Gateway ID: ${orderDetail.paymentGatewayId}`);
+
+            const paymentRequestResponse = await this.xenditClient.PaymentRequest.getPaymentRequestByID({
+                paymentRequestId: orderDetail.paymentGatewayId,
+            });
+
+            const xenditStatus = paymentRequestResponse.status;
+            this.logger.log(`Received Xendit status for [${orderId}]: ${xenditStatus}`);
+            this.logger.log(`Received Xendit status for [${orderId}]: ${xenditStatus}`);
+
+            let isChanged = false;
+            let finalStatus = orderDetail.status;
+
+            if (xenditStatus === 'SUCCEEDED') {
+                finalStatus = OrderStatus.PAID;
+                isChanged = true;
+
+                await firstValueFrom(
+                    this.ordersClient.send(
+                        { cmd: 'update_order_status' },
+                        {
+                            orderId: orderDetail.id,
+                            status: finalStatus,
+                            paidAt: new Date().toISOString(),
+                        },
+                    ),
+                );
+
+                const orderItems = orderDetail.items || [];
+                if (orderItems.length > 0) {
+                    const stockPayload: ReduceStockEventDto = {
+                        orderId: orderDetail.id,
+                        items: orderItems.map((item: StockReductionItemDto) => ({
+                            productId: item.productId,
+                            variantId: item.variantId,
+                            quantity: item.quantity,
+                        })),
+                    };
+                    this.productsClient.emit('reduce_product_variant_stock', stockPayload);
+                    this.logger.log(`Stock reduction event dispatched during manual sync for [${orderId}]`);
+                }
+            } else if (xenditStatus === 'FAILED' || xenditStatus === 'EXPIRED') {
+                finalStatus = OrderStatus.CANCELLED;
+                isChanged = true;
+
+                await firstValueFrom(
+                    this.ordersClient.send(
+                        { cmd: 'update_order_status' },
+                        {
+                            orderId: orderDetail.id,
+                            status: finalStatus,
+                            canceledReason: `Auto-cancelled via Sync. Xendit status: ${xenditStatus}`,
+                            canceledAt: new Date().toISOString(),
+                        },
+                    ),
+                );
+            }
+
+            this.logger.log(`Sync completed for [${orderId}]. Final status: ${finalStatus}`);
+            return { status: finalStatus, isChanged };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) throw error;
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Sync payment failed: ${errorMessage}`, errorStack);
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An unexpected error occurred during payment synchronization',
+            });
         }
     }
 }

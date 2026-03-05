@@ -31,6 +31,7 @@ export * from './lib/orders/order.interface';
 export * from './lib/payments/payment.interface';
 export * from './lib/payments/payment-action.interface';
 export * from './lib/payments/xendit-webhook.interface';
+export * from './lib/payments/sync-payment.interface';
 
 // Product Variants
 export * from './lib/products/product_variants/product-variant.interface';

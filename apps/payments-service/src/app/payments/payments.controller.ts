@@ -5,6 +5,8 @@ import {
     GetPaymentInfoResponseDto,
     PayOrderPayloadDto,
     PayOrderResponseDto,
+    SyncPaymentStatusPayloadDto,
+    SyncPaymentStatusResponseDto,
     XenditWebhookPayloadDto,
 } from '@lumina/shared-dto';
 
@@ -34,5 +36,10 @@ export class PaymentsController {
     @EventPattern('process_xendit_webhook')
     async handleXenditWebhook(@Payload() payload: XenditWebhookPayloadDto): Promise<void> {
         return await this.paymentsService.handleXenditWebhook(payload?.callbackToken, payload?.data);
+    }
+
+    @MessagePattern({ cmd: 'sync_payment_status' })
+    async syncPaymentStatus(@Payload() payload: SyncPaymentStatusPayloadDto): Promise<SyncPaymentStatusResponseDto> {
+        return this.paymentsService.syncPaymentStatus(payload.userId, payload.orderId);
     }
 }
