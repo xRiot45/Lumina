@@ -7,14 +7,10 @@ import {
 import { Controller } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { LoggerService } from '@lumina/shared-logger';
 
 @Controller()
 export class OrdersController {
-    constructor(
-        private readonly ordersService: OrdersService,
-        private readonly logger: LoggerService,
-    ) {}
+    constructor(private readonly ordersService: OrdersService) {}
 
     @MessagePattern({ cmd: 'create_order' })
     async createOrder(@Payload() payload: CreateOrderPayloadDto): Promise<OrderResponseDto> {
@@ -34,5 +30,10 @@ export class OrdersController {
     @MessagePattern({ cmd: 'update_order_status' })
     async updateOrderStatus(@Payload() payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
         return await this.ordersService.updateOrderStatus(payload);
+    }
+
+    @MessagePattern({ cmd: 'find_order_by_number' })
+    async findOrderByNumber(@Payload() orderNumber: string) {
+        return await this.ordersService.findOrderByNumber(orderNumber);
     }
 }

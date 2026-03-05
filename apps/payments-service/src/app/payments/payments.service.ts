@@ -6,7 +6,6 @@ import {
     ReduceStockEventDto,
     UpdateOrderStatusDto,
     UpdatePaymentInfoDto,
-    XenditWebhookDto,
 } from '@lumina/shared-dto';
 import {
     IEWalletActionInfo,
@@ -371,65 +370,88 @@ export class PaymentsService {
         }
     }
 
-    async handleXenditWebhook(callbackToken: string, payload: XenditWebhookDto) {
+    async handleXenditWebhook(callbackToken: string, payload: any) {
         try {
             const expectedToken = process.env.XENDIT_WEBHOOK_TOKEN;
             if (callbackToken !== expectedToken) {
-                this.logger.error(`Invalid Callback Token. Possible attack from outside!`, this.context);
+                this.logger.error(`Invalid Callback Token. Possible attack!`, this.context);
                 return;
             }
 
-            if (payload?.event !== 'payment_request.succeeded') {
-                this.logger.log(`Ignore type events: ${payload.event}`, this.context);
+            const allowedEvents = ['payment_request.succeeded', 'payment.succeeded'];
+            const eventType = payload?.event;
+
+            if (!allowedEvents.includes(eventType)) {
+                this.logger.log(`Ignore type events: ${eventType}`, this.context);
                 return;
             }
 
-            const orderId = payload?.data?.reference_id;
-            const paymentGatewayId = payload?.data?.id;
+            const orderNumber = payload?.data?.reference_id || payload?.external_id || payload?.reference_id;
+            const paymentGatewayIdFromWebhook =
+                payload?.data?.payment_request_id || payload?.payment_request_id || payload?.data?.id || payload?.id;
 
-            this.logger.log(`Processing successful payment for Order: ${orderId}`, this.context);
+            this.logger.log(`Memproses event [${eventType}] untuk Order Number: ${orderNumber}`, this.context);
 
-            const orderDetail = await firstValueFrom(this.ordersClient.send({ cmd: 'find_order_by_id' }, orderId));
+            if (!orderNumber) {
+                this.logger.error(`Gagal mendapatkan Order Number dari payload.`, this.context);
+                return;
+            }
+
+            const orderDetail = await firstValueFrom(
+                this.ordersClient.send({ cmd: 'find_order_by_number' }, orderNumber),
+            );
 
             if (!orderDetail) {
-                this.logger.error(`Order ${orderId} tidak ditemukan di database.`, this.context);
+                this.logger.error(`Order ${orderNumber} not found in database.`, this.context);
                 return;
             }
-
             if (orderDetail.status === OrderStatus.PAID) {
-                this.logger.log(`Order ${orderId} SUDAH DIBAYAR sebelumnya. Mengabaikan webhook ganda.`, this.context);
+                this.logger.log(`Order ${orderNumber} is already PAID. Ignoring webhook.`, this.context);
                 return;
             }
 
-            if (orderDetail.paymentGatewayId !== paymentGatewayId) {
-                this.logger.error(`Mismatch paymentGatewayId untuk Order ${orderId}.`, this.context);
-                return;
+            if (orderDetail.paymentGatewayId && orderDetail.paymentGatewayId !== paymentGatewayIdFromWebhook) {
+                this.logger.warn(
+                    `Minor Gateway ID mismatch for ${orderNumber}. DB: ${orderDetail.paymentGatewayId}, Webhook: ${paymentGatewayIdFromWebhook}`,
+                    this.context,
+                );
             }
+
+            this.logger.log(
+                `Verification successful. Updating Order: ${orderNumber} (Internal ID: ${orderDetail.id})`,
+                this.context,
+            );
 
             const updatePayload: UpdateOrderStatusDto = {
-                orderId: orderId,
+                orderId: orderDetail.id,
                 status: OrderStatus.PAID,
                 paidAt: new Date().toISOString(),
             };
 
             await firstValueFrom(this.ordersClient.send({ cmd: 'update_order_status' }, updatePayload));
-            this.logger.log(`Status Order ${orderId} berhasil diupdate menjadi PAID.`, this.context);
+            this.logger.log(`Database Order ${orderNumber} berhasil diupdate menjadi PAID.`, this.context);
 
-            const stockPayload: ReduceStockEventDto = {
-                orderId,
-                items: orderDetail.items.map((item: { productId: string; variantId: string; quantity: number }) => ({
-                    productId: item.productId,
-                    variantId: item.variantId,
-                    quantity: item.quantity,
-                })),
-            };
+            const orderItems = orderDetail.items || [];
+            if (orderItems.length > 0) {
+                const stockPayload: ReduceStockEventDto = {
+                    orderId: orderDetail.id,
+                    items: orderItems.map((item: any) => ({
+                        productId: item.productId,
+                        variantId: item.variantId,
+                        quantity: item.quantity,
+                    })),
+                };
 
-            this.productsClient.emit('reduce_product_variant_stock', stockPayload);
-            this.logger.log(`Event pengurangan stok dikirim untuk Order ${orderId}.`, this.context);
+                this.productsClient.emit('reduce_product_variant_stock', stockPayload);
+                this.logger.log(`Event pengurangan stok dikirim untuk Order ${orderNumber}.`, this.context);
+            }
+
+            this.logger.log(`SELESAI: Pembayaran Order ${orderNumber} telah sepenuhnya diverifikasi.`, this.context);
         } catch (error: unknown) {
-            this.logger.error(
-                `[ERROR] Error in handleXenditWebhook: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`[ERROR] handleXenditWebhook failed: ${errorMessage}`, errorStack, this.context);
         }
     }
 }

@@ -1,47 +1,70 @@
-import { IsString, IsNotEmpty, IsObject, ValidateNested, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsObject, ValidateNested, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IXenditWebhookData, IXenditWebhookPayload } from '@lumina/shared-interfaces';
 
 // DTO untuk objek "data" di dalam payload Xendit
-export class XenditWebhookDataDto implements IXenditWebhookData {
+export class XenditWebhookDataDto {
     @IsString()
-    @IsNotEmpty()
-    id!: string;
+    @IsOptional()
+    id?: string;
 
     @IsString()
-    @IsNotEmpty()
-    reference_id!: string;
+    @IsOptional()
+    reference_id?: string;
 
     @IsString()
-    @IsNotEmpty()
-    status!: string;
+    @IsOptional()
+    status?: string;
 
     @IsNumber()
-    @IsNotEmpty()
-    amount!: number;
+    @IsOptional()
+    amount?: number;
 
     @IsString()
-    @IsNotEmpty()
-    currency!: string;
+    @IsOptional()
+    currency?: string;
 }
 
-export class XenditWebhookDto implements IXenditWebhookPayload {
+export class XenditWebhookDto {
+    // --- Properti Umum (V3) ---
     @IsString()
-    @IsNotEmpty()
-    event!: string;
+    @IsOptional()
+    event?: string;
 
     @IsString()
-    @IsNotEmpty()
-    business_id!: string;
+    @IsOptional()
+    business_id?: string;
 
     @IsString()
-    @IsNotEmpty()
-    created!: string;
+    @IsOptional()
+    created?: string;
 
+    // --- Objek Nested (V3) ---
     @IsObject()
+    @IsOptional()
     @ValidateNested()
     @Type(() => XenditWebhookDataDto)
-    data!: XenditWebhookDataDto;
+    data?: XenditWebhookDataDto;
+
+    // --- Properti Root Level (Khusus V2 / payment.succeeded) ---
+    @IsString()
+    @IsOptional()
+    id?: string; // ID transaksi di V2
+
+    @IsString()
+    @IsOptional()
+    external_id?: string; // Ini adalah reference_id (orderId) di V2
+
+    @IsNumber()
+    @IsOptional()
+    amount?: number;
+
+    @IsString()
+    @IsOptional()
+    status?: string;
+
+    @IsString()
+    @IsOptional()
+    payment_method?: string;
 }
 
 export class XenditWebhookPayloadDto {

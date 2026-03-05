@@ -293,4 +293,12 @@ export class OrdersService {
             });
         }
     }
+
+    async findOrderByNumber(orderNumber: string) {
+        const order = await this.orderRepository.findOne({
+            where: { orderNumber },
+            relations: ['items'],
+        });
+        return order;
+    }
 }

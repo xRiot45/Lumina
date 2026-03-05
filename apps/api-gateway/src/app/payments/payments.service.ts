@@ -185,7 +185,7 @@ export class PaymentsService {
         try {
             const payload = {
                 callbackToken,
-                dto,
+                data: dto,
             };
 
             const response = await firstValueFrom(this.paymentsClient.emit('process_xendit_webhook', payload));
