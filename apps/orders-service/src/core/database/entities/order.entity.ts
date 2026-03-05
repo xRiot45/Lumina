@@ -46,6 +46,9 @@ export class OrderEntity extends BaseEntity {
     paymentActionInfo?: IPaymentActionInfo | null;
 
     @Column({ type: 'timestamp', nullable: true })
+    paymentExpiresAt?: Date | null;
+
+    @Column({ type: 'timestamp', nullable: true })
     paidAt?: Date | null;
 
     @Column({ type: 'timestamp', nullable: true })

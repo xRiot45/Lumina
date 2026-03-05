@@ -83,11 +83,19 @@ export class PaymentsService {
                 });
             }
 
+            const expirationDate = new Date(orderDetail?.paymentExpiresAt ?? new Date());
+            const now = new Date();
+
+            if (expirationDate.getTime() - now.getTime() < 60 * 1000) {
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: 'The payment period for this order has expired. Please create a new order.',
+                    error: 'Bad Request',
+                });
+            }
+
             const selectedMethod = orderDetail.paymentMethod as PaymentMethod;
             const customerName = orderDetail.shippingAddress?.recipientName ?? 'Lumina Customer';
-
-            const expirationDate = new Date();
-            expirationDate.setHours(expirationDate.getHours() + 1);
 
             let xenditPaymentMethodParam: IXenditPaymentMethodParam;
 
@@ -163,7 +171,7 @@ export class PaymentsService {
                 data: {
                     referenceId: orderDetail.orderNumber,
                     currency: 'IDR',
-                    amount: orderDetail.totalAmount,
+                    amount: Number(orderDetail.totalAmount),
                     paymentMethod: xenditPaymentMethodParam as PaymentMethodParameters,
                 },
             });

@@ -110,6 +110,7 @@ export class OrderResponseDto implements IOrderResponse {
     @Expose()
     @Transform(({ obj }) => obj.paymentActionInfo)
     paymentActionInfo?: IPaymentActionInfo | null;
+    @Expose() paymentExpiresAt?: Date | null;
 
     @Expose() paidAt?: Date | null;
     @Expose() canceledAt?: Date | null;

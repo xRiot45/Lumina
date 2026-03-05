@@ -126,6 +126,9 @@ export class OrdersService {
             const shippingCost = calculateShippingCost(data.serviceType);
             const finalTotalAmount = cartTotalAmount + shippingCost;
 
+            const expirationDate = new Date();
+            expirationDate.setHours(expirationDate.getHours() + 1);
+
             const newOrder = this.orderRepository.create({
                 orderNumber: autoGenerateOrderNumber(),
                 userId: userId,
@@ -136,6 +139,7 @@ export class OrdersService {
                 courier: data.courier,
                 serviceType: data.serviceType,
                 paymentMethod: data.paymentMethod,
+                paymentExpiresAt: expirationDate,
                 notes: data.notes,
                 items: orderItems,
             } as OrderEntity);

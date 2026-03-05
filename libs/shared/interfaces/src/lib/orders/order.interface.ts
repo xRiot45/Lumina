@@ -51,6 +51,7 @@ export interface IOrderResponse {
     paymentMethod: PaymentMethod;
     paymentGatewayId?: string | null;
     paymentActionInfo?: IPaymentActionInfo | null;
+    paymentExpiresAt?: Date | null;
 
     paidAt?: Date | null;
     canceledAt?: Date | null;

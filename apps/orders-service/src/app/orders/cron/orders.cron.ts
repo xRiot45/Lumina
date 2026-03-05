@@ -19,13 +19,12 @@ export class OrdersCron {
         this.logger.debug('Running cron job to check for expired orders...');
 
         try {
-            const oneHourAgo = new Date();
-            oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+            const now = new Date();
 
             const expiredOrders = await this.orderRepository.find({
                 where: {
                     status: OrderStatus.PENDING_PAYMENT,
-                    createdAt: LessThan(oneHourAgo),
+                    paymentExpiresAt: LessThan(now),
                 },
             });
 
