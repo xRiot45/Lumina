@@ -5,7 +5,7 @@ import {
     GetPaymentInfoResponseDto,
     PayOrderPayloadDto,
     PayOrderResponseDto,
-    XenditWebhookDto,
+    XenditWebhookPayloadDto,
 } from '@lumina/shared-dto';
 
 import { Controller } from '@nestjs/common';
@@ -32,7 +32,7 @@ export class PaymentsController {
     }
 
     @EventPattern('process_xendit_webhook')
-    async handleXenditWebhook(@Payload() payload: { callbackToken: string; data: XenditWebhookDto }): Promise<void> {
+    async handleXenditWebhook(@Payload() payload: XenditWebhookPayloadDto): Promise<void> {
         return await this.paymentsService.handleXenditWebhook(payload?.callbackToken, payload?.data);
     }
 }

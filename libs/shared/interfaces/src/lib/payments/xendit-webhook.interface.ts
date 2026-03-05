@@ -1,15 +1,19 @@
 export interface IXenditWebhookData {
-    id: string; // ID Payment Request (paymentGatewayId di databasemu)
-    reference_id: string; // Biasanya ini adalah orderId kamu
-    status: string; // 'SUCCEEDED', 'PENDING', 'FAILED', dll
-    amount: number;
-    currency: string;
-    [key: string]: any;
+    id?: string;
+    reference_id?: string;
+    payment_request_id?: string;
+}
+
+export interface IXenditWebhook {
+    event: string;
+    id?: string;
+    external_id?: string;
+    reference_id?: string;
+    payment_request_id?: string;
+    data?: IXenditWebhookData;
 }
 
 export interface IXenditWebhookPayload {
-    event: string; // Contoh: 'payment_request.succeeded'
-    business_id: string;
-    created: string;
-    data: IXenditWebhookData;
+    callbackToken: string;
+    data: IXenditWebhook;
 }

@@ -7,8 +7,8 @@ import {
     PayOrderDto,
     PayOrderPayloadDto,
     PayOrderResponseDto,
-    XenditWebhookDto,
 } from '@lumina/shared-dto';
+import { IXenditWebhook } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -179,7 +179,7 @@ export class PaymentsService {
         }
     }
 
-    async handleXenditWebhook(callbackToken: string, dto: any): Promise<void> {
+    async handleXenditWebhook(callbackToken: string, dto: IXenditWebhook): Promise<void> {
         this.logger.log({ message: 'Handle Xendit Callback', callbackToken, dto }, this.context);
 
         try {

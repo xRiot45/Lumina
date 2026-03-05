@@ -4,7 +4,7 @@ import { CurrentUser, Public, Roles } from '@lumina/shared-common';
 import { UserRole } from '@lumina/shared-interfaces';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import type { IAuthenticatedUser } from '@lumina/shared-interfaces';
+import type { IAuthenticatedUser, IXenditWebhook } from '@lumina/shared-interfaces';
 import {
     BaseResponseDto,
     ChargePaymentDto,
@@ -12,7 +12,6 @@ import {
     GetPaymentInfoResponseDto,
     PayOrderDto,
     PayOrderResponseDto,
-    XenditWebhookDto,
 } from '@lumina/shared-dto';
 
 @Controller('payments')
@@ -75,7 +74,10 @@ export class PaymentsController {
     @Public()
     @Post('webhook/xendit')
     @HttpCode(HttpStatus.OK)
-    async handleXenditWebhook(@Headers('x-callback-token') callbackToken: string, @Body() dto: any): Promise<void> {
+    async handleXenditWebhook(
+        @Headers('x-callback-token') callbackToken: string,
+        @Body() dto: IXenditWebhook,
+    ): Promise<void> {
         await this.paymentsService.handleXenditWebhook(callbackToken, dto);
     }
 }
