@@ -91,18 +91,6 @@ export class GetPaymentInfoResponseDto implements IGetPaymentInfoResponse {
     @Expose()
     @Transform(({ obj }) => obj.paymentActionInfo)
     paymentActionInfo!: IPaymentActionInfo | null;
-
-    @Expose()
-    createdAt!: Date | string;
-
-    @Expose()
-    paidAt?: Date | string | null;
-
-    @Expose()
-    canceledAt?: Date | string | null;
-
-    @Expose()
-    canceledReason?: string | null;
 }
 
 export class PayOrderDto implements IPayOrderRequest {

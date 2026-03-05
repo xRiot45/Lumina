@@ -265,10 +265,6 @@ export class PaymentsService {
                 totalAmount: orderDetail.totalAmount,
                 paymentMethod: orderDetail.paymentMethod,
                 paymentActionInfo: orderDetail.paymentActionInfo ?? null,
-                createdAt: orderDetail.createdAt,
-                paidAt: orderDetail.paidAt ?? null,
-                canceledAt: orderDetail.canceledAt ?? null,
-                canceledReason: orderDetail.canceledReason ?? null,
             };
 
             return mapToDto(GetPaymentInfoResponseDto, response);

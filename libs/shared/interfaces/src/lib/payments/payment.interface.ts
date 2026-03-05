@@ -86,15 +86,7 @@ export interface IGetPaymentInfoResponse {
     status: string;
     totalAmount: number;
     paymentMethod: string;
-
-    // Data krusial untuk instruksi & hitung mundur
     paymentActionInfo: IPaymentActionInfo | null;
-
-    // Data timeline waktu
-    createdAt: Date | string;
-    paidAt?: Date | string | null;
-    canceledAt?: Date | string | null;
-    canceledReason?: string | null;
 }
 
 export interface IPayOrderRequest {
