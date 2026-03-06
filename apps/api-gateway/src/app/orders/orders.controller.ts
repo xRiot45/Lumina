@@ -58,4 +58,20 @@ export class OrdersController {
             message: 'Order status updated successfully',
         };
     }
+
+    @Patch(':orderId/confirm')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async confirmOrder(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Param('orderId') orderId: string,
+    ): Promise<BaseResponseDto> {
+        await this.ordersService.confirmOrder(user?.id, orderId);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Order confirmed successfully',
+        };
+    }
 }

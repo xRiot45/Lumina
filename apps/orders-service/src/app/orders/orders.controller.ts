@@ -1,4 +1,5 @@
 import {
+    ConfirmOrderPayloadDto,
     CreateOrderPayloadDto,
     OrderResponseDto,
     UpdateOrderStatusPayloadDto,
@@ -41,5 +42,10 @@ export class OrdersController {
     @MessagePattern({ cmd: 'update_order_status' })
     async updateOrderStatus(@Payload() payload: UpdateOrderStatusPayloadDto): Promise<{ success: boolean }> {
         return await this.ordersService.updateOrderStatus(payload.orderId, payload.data);
+    }
+
+    @MessagePattern({ cmd: 'confirm_order' })
+    async confirmOrder(@Payload() payload: ConfirmOrderPayloadDto): Promise<{ success: boolean }> {
+        return await this.ordersService.confirmOrder(payload.userId, payload.orderId);
     }
 }

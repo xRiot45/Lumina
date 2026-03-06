@@ -174,4 +174,56 @@ export class OrdersService {
             );
         }
     }
+
+    async confirmOrder(userId: string, orderId: string): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Initiating order confirmation', orderId }, this.context);
+
+        try {
+            const payload = {
+                userId,
+                orderId,
+            };
+            const response = await firstValueFrom(
+                this.ordersClient.send<{ success: boolean }>({ cmd: 'confirm_order' }, payload),
+            );
+            return response;
+        } catch (error: unknown) {
+            this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
 }

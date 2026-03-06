@@ -404,4 +404,74 @@ export class OrdersService {
             });
         }
     }
+
+    async confirmOrder(userId: string, orderId: string): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Initiating order confirmation', orderId }, this.context);
+
+        try {
+            const orderDetail = await this.orderRepository.findOne({
+                where: { id: orderId },
+            });
+
+            if (!orderDetail) {
+                this.logger.warn({ message: 'Order not found for confirmation', orderId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: `Order with ID ${orderId} not found.`,
+                    error: 'Not Found',
+                });
+            }
+
+            if (orderDetail.userId !== userId) {
+                this.logger.warn({ message: 'Unauthorized order confirmation attempt', orderId, userId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: `Order with ID ${orderId} not found.`,
+                    error: 'Not Found',
+                });
+            }
+
+            if (orderDetail.status === OrderStatus.COMPLETED) {
+                this.logger.log({ message: 'Order is already confirmed, bypassing', orderId }, this.context);
+                return { success: true };
+            }
+
+            const confirmableStatuses = [OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+            if (!confirmableStatuses.includes(orderDetail.status as OrderStatus)) {
+                this.logger.warn(
+                    { message: `Attempted to confirm order with invalid status: ${orderDetail.status}`, orderId },
+                    this.context,
+                );
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: `Cannot confirm order. Current status is ${orderDetail.status}. Order must be SHIPPED or DELIVERED.`,
+                    error: 'Bad Request',
+                });
+            }
+
+            orderDetail.status = OrderStatus.COMPLETED;
+            orderDetail.completedAt = new Date();
+
+            await this.orderRepository.save(orderDetail);
+
+            this.logger.log({ message: 'Order successfully confirmed', orderId }, this.context);
+            return { success: true };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            // Typo diperbaiki
+            this.logger.error(`Failed to confirm order: ${errorMessage}`, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while confirming the order',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }
