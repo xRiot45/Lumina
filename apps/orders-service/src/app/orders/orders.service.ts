@@ -248,7 +248,7 @@ export class OrdersService {
         }
     }
 
-    async updateOrderStatus(payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+    async updateOrderStatusToPaid(payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
         this.logger.log(`Received command to update order ${payload.orderId} to status ${payload.status}`);
 
         try {

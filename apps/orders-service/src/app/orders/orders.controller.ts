@@ -27,9 +27,9 @@ export class OrdersController {
         return await this.ordersService.updatePaymentInfo(payload);
     }
 
-    @MessagePattern({ cmd: 'update_order_status' })
-    async updateOrderStatus(@Payload() payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
-        return await this.ordersService.updateOrderStatus(payload);
+    @MessagePattern({ cmd: 'update_order_status_to_paid' })
+    async updateOrderStatusToPaid(@Payload() payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+        return await this.ordersService.updateOrderStatusToPaid(payload);
     }
 
     @MessagePattern({ cmd: 'find_order_by_number' })

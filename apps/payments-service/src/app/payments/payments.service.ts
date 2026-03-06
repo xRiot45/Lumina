@@ -23,7 +23,7 @@ import { LoggerService } from '@lumina/shared-logger';
 import { getXenditBankCode, getXenditEwalletCode, mapToDto } from '@lumina/shared-utils';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { catchError, firstValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { Xendit } from 'xendit-node';
 import { PaymentMethodParameters } from 'xendit-node/payment_request/models';
 import { AxiosError } from 'axios';
@@ -432,7 +432,7 @@ export class PaymentsService {
                 paidAt: new Date().toISOString(),
             };
 
-            await firstValueFrom(this.ordersClient.send({ cmd: 'update_order_status' }, updatePayload));
+            await firstValueFrom(this.ordersClient.send({ cmd: 'update_order_status_to_paid' }, updatePayload));
             this.logger.log(`Database Order [${orderNumber}] successfully updated to PAID.`);
 
             const orderItems = orderDetail.items || [];
@@ -512,7 +512,7 @@ export class PaymentsService {
 
                 await firstValueFrom(
                     this.ordersClient.send(
-                        { cmd: 'update_order_status' },
+                        { cmd: 'update_order_status_to_paid' },
                         {
                             orderId: orderDetail.id,
                             status: finalStatus,
@@ -540,7 +540,7 @@ export class PaymentsService {
 
                 await firstValueFrom(
                     this.ordersClient.send(
-                        { cmd: 'update_order_status' },
+                        { cmd: 'update_order_status_to_paid' },
                         {
                             orderId: orderDetail.id,
                             status: finalStatus,
