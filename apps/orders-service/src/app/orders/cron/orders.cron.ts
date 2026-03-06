@@ -35,12 +35,12 @@ export class OrdersCron {
             this.logger.log(`Found ${expiredOrders.length} expired orders. Cancelling them...`);
 
             for (const order of expiredOrders) {
-                order.status = OrderStatus.CANCELLED;
+                order.status = OrderStatus.CANCELED;
             }
 
             await this.orderRepository.save(expiredOrders);
 
-            this.logger.log(`Successfully cancelled ${expiredOrders.length} expired orders.`);
+            this.logger.log(`Successfully canceled ${expiredOrders.length} expired orders.`);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;

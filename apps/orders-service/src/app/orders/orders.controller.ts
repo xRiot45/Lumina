@@ -1,7 +1,8 @@
 import {
     CreateOrderPayloadDto,
     OrderResponseDto,
-    UpdateOrderStatusDto,
+    UpdateOrderStatusPayloadDto,
+    UpdateOrderStatusToPaidDto,
     UpdatePaymentInfoDto,
 } from '@lumina/shared-dto';
 import { Controller } from '@nestjs/common';
@@ -28,12 +29,17 @@ export class OrdersController {
     }
 
     @MessagePattern({ cmd: 'update_order_status_to_paid' })
-    async updateOrderStatusToPaid(@Payload() payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+    async updateOrderStatusToPaid(@Payload() payload: UpdateOrderStatusToPaidDto): Promise<OrderResponseDto> {
         return await this.ordersService.updateOrderStatusToPaid(payload);
     }
 
     @MessagePattern({ cmd: 'find_order_by_number' })
     async findOrderByNumber(@Payload() orderNumber: string) {
         return await this.ordersService.findOrderByNumber(orderNumber);
+    }
+
+    @MessagePattern({ cmd: 'update_order_status' })
+    async updateOrderStatus(@Payload() payload: UpdateOrderStatusPayloadDto): Promise<{ success: boolean }> {
+        return await this.ordersService.updateOrderStatus(payload.orderId, payload.data);
     }
 }

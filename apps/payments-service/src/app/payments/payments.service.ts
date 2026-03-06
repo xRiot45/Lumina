@@ -6,7 +6,7 @@ import {
     ReduceStockEventDto,
     StockReductionItemDto,
     SyncPaymentStatusResponseDto,
-    UpdateOrderStatusDto,
+    UpdateOrderStatusToPaidDto,
     UpdatePaymentInfoDto,
     XenditWebhookDto,
 } from '@lumina/shared-dto';
@@ -426,7 +426,7 @@ export class PaymentsService {
 
             this.logger.log(`Verification successful. Updating Order: ${orderNumber} (Internal ID: ${orderDetail.id})`);
 
-            const updatePayload: UpdateOrderStatusDto = {
+            const updatePayload: UpdateOrderStatusToPaidDto = {
                 orderId: orderDetail.id,
                 status: OrderStatus.PAID,
                 paidAt: new Date().toISOString(),
@@ -535,7 +535,7 @@ export class PaymentsService {
                     this.logger.log(`Stock reduction event dispatched during manual sync for [${orderId}]`);
                 }
             } else if (xenditStatus === 'FAILED' || xenditStatus === 'EXPIRED') {
-                finalStatus = OrderStatus.CANCELLED;
+                finalStatus = OrderStatus.CANCELED;
                 isChanged = true;
 
                 await firstValueFrom(
@@ -544,7 +544,7 @@ export class PaymentsService {
                         {
                             orderId: orderDetail.id,
                             status: finalStatus,
-                            canceledReason: `Auto-cancelled via Sync. Xendit status: ${xenditStatus}`,
+                            canceledReason: `Auto-canceled via Sync. Xendit status: ${xenditStatus}`,
                             canceledAt: new Date().toISOString(),
                         },
                     ),

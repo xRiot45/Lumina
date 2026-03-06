@@ -14,7 +14,13 @@ import {
 } from '@lumina/shared-interfaces';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { CreateOrderDto, OrderResponseDto, UpdateOrderStatusDto, UpdatePaymentInfoDto } from '@lumina/shared-dto';
+import {
+    CreateOrderDto,
+    OrderResponseDto,
+    UpdateOrderStatusDto,
+    UpdateOrderStatusToPaidDto,
+    UpdatePaymentInfoDto,
+} from '@lumina/shared-dto';
 
 @Injectable()
 export class OrdersService {
@@ -248,7 +254,7 @@ export class OrdersService {
         }
     }
 
-    async updateOrderStatusToPaid(payload: UpdateOrderStatusDto): Promise<OrderResponseDto> {
+    async updateOrderStatusToPaid(payload: UpdateOrderStatusToPaidDto): Promise<OrderResponseDto> {
         this.logger.log(`Received command to update order ${payload.orderId} to status ${payload.status}`);
 
         try {
@@ -263,10 +269,10 @@ export class OrdersService {
                 });
             }
 
-            if (order.status === OrderStatus.CANCELLED) {
+            if (order.status === OrderStatus.CANCELED) {
                 throw new RpcException({
                     statusCode: HttpStatus.BAD_REQUEST,
-                    message: `Cannot change status. Order ${order.id} is already cancelled.`,
+                    message: `Cannot change status. Order ${order.id} is already canceled.`,
                 });
             }
 
@@ -304,5 +310,98 @@ export class OrdersService {
             relations: ['items'],
         });
         return order;
+    }
+
+    async updateOrderStatus(orderId: string, data: UpdateOrderStatusDto): Promise<{ success: boolean }> {
+        this.logger.log({ message: 'Initiating admin order status update', orderId }, this.context);
+
+        try {
+            const orderDetail = await this.orderRepository.findOne({
+                where: { id: orderId },
+            });
+
+            if (!orderDetail) {
+                this.logger.warn({ message: 'Order not found for status update', orderId }, this.context);
+                throw new RpcException({
+                    statusCode: HttpStatus.NOT_FOUND,
+                    message: `Order with ID ${orderId} not found.`,
+                    error: 'Not Found',
+                });
+            }
+
+            if (orderDetail.status === data.status) {
+                this.logger.log(
+                    { message: 'Order status is already up to date, skipping update', orderId },
+                    this.context,
+                );
+                return { success: true };
+            }
+
+            const validTransitions: Record<OrderStatus, OrderStatus[]> = {
+                [OrderStatus.PENDING_PAYMENT]: [OrderStatus.PAID], // Admin bisa manual update ke PAID (misal via bank transfer manual)
+                [OrderStatus.PAID]: [OrderStatus.PROCESSING],
+                [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED],
+                [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
+                [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
+                [OrderStatus.COMPLETED]: [],
+                [OrderStatus.CANCELED]: [],
+            };
+
+            const allowedNextStatuses = validTransitions[orderDetail.status as OrderStatus] || [];
+
+            if (!allowedNextStatuses.includes(data.status)) {
+                this.logger.warn(
+                    {
+                        message: `Invalid admin status transition from ${orderDetail.status} to ${data.status}`,
+                        orderId,
+                    },
+                    this.context,
+                );
+                throw new RpcException({
+                    statusCode: HttpStatus.BAD_REQUEST,
+                    message: `Admin cannot transition order status from ${orderDetail.status} to ${data.status}.`,
+                    error: 'Bad Request',
+                });
+            }
+
+            const now = new Date();
+            switch (data.status) {
+                case OrderStatus.PAID:
+                    orderDetail.paidAt = now;
+                    break;
+                case OrderStatus.PROCESSING:
+                    orderDetail.processingAt = now;
+                    break;
+                case OrderStatus.SHIPPED:
+                    orderDetail.shippedAt = now;
+                    break;
+                case OrderStatus.DELIVERED:
+                    orderDetail.deliveredAt = now;
+                    break;
+                case OrderStatus.COMPLETED:
+                    orderDetail.completedAt = now;
+                    break;
+            }
+
+            orderDetail.status = data.status;
+
+            await this.orderRepository.save(orderDetail);
+            return { success: true };
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Failed to update order status: ${errorMessage}`, errorStack, this.context);
+
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while updating order status',
+                error: 'Internal Server Error',
+            });
+        }
     }
 }
