@@ -114,8 +114,10 @@ export class OrderResponseDto implements IOrderResponse {
     @Expose() paymentExpiresAt?: Date | null;
 
     @Expose() paidAt?: Date | null;
+    @Expose() processingAt?: Date | null;
+    @Expose() shippedAt?: Date | null;
+    @Expose() completedAt?: Date | null;
     @Expose() canceledAt?: Date | null;
-    @Expose() canceledReason?: string | null;
 
     @Expose()
     @Type(() => OrderItemResponseDto)

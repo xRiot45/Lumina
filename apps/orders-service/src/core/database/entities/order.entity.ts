@@ -66,9 +66,6 @@ export class OrderEntity extends BaseEntity {
     @Column({ type: 'timestamp', nullable: true })
     canceledAt?: Date | null;
 
-    @Column({ type: 'text', nullable: true })
-    canceledReason?: string | null;
-
     @OneToMany(() => OrderItemEntity, (item) => item.order, {
         cascade: true,
     })

@@ -36,6 +36,7 @@ export class OrdersCron {
 
             for (const order of expiredOrders) {
                 order.status = OrderStatus.CANCELED;
+                order.canceledAt = new Date();
             }
 
             await this.orderRepository.save(expiredOrders);
