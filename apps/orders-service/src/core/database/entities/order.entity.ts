@@ -52,6 +52,18 @@ export class OrderEntity extends BaseEntity {
     paidAt?: Date | null;
 
     @Column({ type: 'timestamp', nullable: true })
+    processingAt?: Date | null;
+
+    @Column({ type: 'timestamp', nullable: true })
+    shippedAt?: Date | null;
+
+    @Column({ type: 'timestamp', nullable: true })
+    deliveredAt?: Date | null;
+
+    @Column({ type: 'timestamp', nullable: true })
+    completedAt?: Date | null;
+
+    @Column({ type: 'timestamp', nullable: true })
     canceledAt?: Date | null;
 
     @Column({ type: 'text', nullable: true })
