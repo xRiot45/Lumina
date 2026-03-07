@@ -1,12 +1,13 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderEntity } from '../../core/database/entities/order.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { LoggerService } from '@lumina/shared-logger';
 import { autoGenerateOrderNumber, calculateShippingCost, mapToDto } from '@lumina/shared-utils';
 import {
     ICartItemSnapshot,
     ICartResponseSnapshot,
+    IPaginatedResponse,
     IProductDetailSnapshot,
     IProductVariantSnapshot,
     IShippingAddressSnapshot,
@@ -16,6 +17,7 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import {
     CreateOrderDto,
+    OrderPaginationDto,
     OrderResponseDto,
     UpdateOrderStatusDto,
     UpdateOrderStatusToPaidDto,
@@ -470,6 +472,63 @@ export class OrdersService {
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'An error occurred while confirming the order',
+                error: 'Internal Server Error',
+            });
+        }
+    }
+
+    async findAll(payload: OrderPaginationDto): Promise<IPaginatedResponse<OrderResponseDto>> {
+        this.logger.log('Fetching all orders', this.context);
+
+        try {
+            const page = payload?.page ?? 1;
+            const limit = payload?.limit ?? 10;
+            const order = payload?.order ?? 'ASC';
+
+            const skip = (page - 1) * limit;
+
+            const whereCondition: FindOptionsWhere<OrderEntity> = {};
+
+            if (payload?.search) {
+                whereCondition.orderNumber = ILike(`%${payload.search}%`);
+            }
+
+            if (payload?.status) {
+                whereCondition.status = payload.status;
+            }
+
+            const [orders, totalItems] = await this.orderRepository.findAndCount({
+                where: whereCondition,
+                order: { orderNumber: order },
+                skip: skip,
+                take: limit,
+            });
+
+            const totalPages = Math.ceil(totalItems / limit);
+            const result: IPaginatedResponse<OrderResponseDto> = {
+                data: orders,
+                meta: {
+                    page,
+                    limit,
+                    totalItems,
+                    totalPages,
+                },
+            };
+
+            this.logger.log('Orders fetched successfully', this.context);
+            return result;
+        } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Failed to fetch orders: ${errorMessage}`, errorStack, this.context);
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while fetching orders',
                 error: 'Internal Server Error',
             });
         }

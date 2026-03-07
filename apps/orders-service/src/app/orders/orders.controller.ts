@@ -1,6 +1,7 @@
 import {
     ConfirmOrderPayloadDto,
     CreateOrderPayloadDto,
+    OrderPaginationDto,
     OrderResponseDto,
     UpdateOrderStatusPayloadDto,
     UpdateOrderStatusToPaidDto,
@@ -9,6 +10,7 @@ import {
 import { Controller } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { IPaginatedResponse } from '@lumina/shared-interfaces';
 
 @Controller()
 export class OrdersController {
@@ -47,5 +49,10 @@ export class OrdersController {
     @MessagePattern({ cmd: 'confirm_order' })
     async confirmOrder(@Payload() payload: ConfirmOrderPayloadDto): Promise<{ success: boolean }> {
         return await this.ordersService.confirmOrder(payload.userId, payload.orderId);
+    }
+
+    @MessagePattern({ cmd: 'find_all_orders' })
+    async findAll(@Payload() payload: OrderPaginationDto): Promise<IPaginatedResponse<OrderResponseDto>> {
+        return await this.ordersService.findAll(payload);
     }
 }

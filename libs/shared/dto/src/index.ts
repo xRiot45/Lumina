@@ -23,6 +23,7 @@ export * from './lib/carts/cart.dto';
 
 // Orders DTO
 export * from './lib/orders/order.dto';
+export * from './lib/orders/order-pagination.dto';
 
 // Payments DTO
 export * from './lib/payments/payment.dto';

@@ -1,10 +1,12 @@
 import {
     CreateOrderDto,
     CreateOrderPayloadDto,
+    OrderPaginationDto,
     OrderResponseDto,
     UpdateOrderStatusDto,
     UpdateOrderStatusPayloadDto,
 } from '@lumina/shared-dto';
+import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
@@ -189,6 +191,52 @@ export class OrdersService {
             return response;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
+
+            if (isMicroserviceError(error)) {
+                const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
+                const message = error.message || 'Service Error';
+                const errorName = error.error || 'Bad Request';
+
+                throw new HttpException(
+                    {
+                        statusCode: status,
+                        message: message,
+                        error: errorName,
+                    },
+                    status,
+                );
+            }
+
+            if (error instanceof Error) {
+                throw new HttpException(
+                    {
+                        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                        message: error.message,
+                        error: 'Internal Server Error',
+                    },
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+
+            throw new HttpException(
+                {
+                    statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                    message: 'Internal Server Error (Gateway)',
+                    error: 'Unknown Error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async findAll(query: OrderPaginationDto): Promise<IPaginatedResponse<OrderResponseDto>> {
+        this.logger.log({ message: 'Initiating order find all', query }, this.context);
+
+        try {
+            const response = await firstValueFrom(this.ordersClient.send({ cmd: 'find_all_orders' }, query));
+            return response;
+        } catch (error) {
+            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
 
             if (isMicroserviceError(error)) {
                 const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
