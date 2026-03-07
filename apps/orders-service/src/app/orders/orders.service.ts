@@ -533,4 +533,63 @@ export class OrdersService {
             });
         }
     }
+
+    async findAllMyOrders(userId: string, data?: OrderPaginationDto): Promise<IPaginatedResponse<OrderResponseDto>> {
+        this.logger.log('Fetching my orders', this.context);
+
+        try {
+            const page = data?.page ?? 1;
+            const limit = data?.limit ?? 10;
+            const order = data?.order ?? 'ASC';
+
+            const skip = (page - 1) * limit;
+
+            const whereCondition: FindOptionsWhere<OrderEntity> = {};
+
+            if (data?.search) {
+                whereCondition.orderNumber = ILike(`%${data.search}%`);
+            }
+
+            if (data?.status) {
+                whereCondition.status = data.status;
+            }
+
+            whereCondition.userId = userId;
+
+            const [orders, totalItems] = await this.orderRepository.findAndCount({
+                where: whereCondition,
+                order: { orderNumber: order },
+                skip: skip,
+                take: limit,
+            });
+
+            const totalPages = Math.ceil(totalItems / limit);
+            const result: IPaginatedResponse<OrderResponseDto> = {
+                data: orders,
+                meta: {
+                    page,
+                    limit,
+                    totalItems,
+                    totalPages,
+                },
+            };
+
+            this.logger.log('My orders fetched successfully', this.context);
+            return result;
+        } catch (error) {
+            if (error instanceof RpcException) {
+                throw error;
+            }
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error(`Failed to fetch my orders: ${errorMessage}`, errorStack, this.context);
+            throw new RpcException({
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'An error occurred while fetching my orders',
+                error: 'Internal Server Error',
+            });
+        }
+    }
 }

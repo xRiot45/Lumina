@@ -35,6 +35,39 @@ export class OrdersController {
         };
     }
 
+    @Get()
+    @Roles(UserRole.ADMIN)
+    @HttpCode(HttpStatus.OK)
+    async findAll(@Query() query: OrderPaginationDto): Promise<BaseResponseDto<OrderResponseDto[]>> {
+        const result = await this.ordersService.findAll(query);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'Orders found successfully',
+            data: result.data,
+            meta: result.meta,
+        };
+    }
+
+    @Get('me')
+    @Roles(UserRole.CUSTOMER)
+    @HttpCode(HttpStatus.OK)
+    async findAllMyOrders(
+        @CurrentUser() user: IAuthenticatedUser,
+        @Query() query: OrderPaginationDto,
+    ): Promise<BaseResponseDto<OrderResponseDto[]>> {
+        const result = await this.ordersService.findAllMyOrders(user?.id, query);
+        return {
+            success: true,
+            statusCode: HttpStatus.OK,
+            timestamp: new Date(),
+            message: 'My orders found successfully',
+            data: result.data,
+            meta: result.meta,
+        };
+    }
+
     @Get(':orderId')
     @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
     @HttpCode(HttpStatus.OK)
@@ -78,21 +111,6 @@ export class OrdersController {
             statusCode: HttpStatus.OK,
             timestamp: new Date(),
             message: 'Order confirmed successfully',
-        };
-    }
-
-    @Get()
-    @Roles(UserRole.ADMIN)
-    @HttpCode(HttpStatus.OK)
-    async findAll(@Query() query: OrderPaginationDto): Promise<BaseResponseDto<OrderResponseDto[]>> {
-        const result = await this.ordersService.findAll(query);
-        return {
-            success: true,
-            statusCode: HttpStatus.OK,
-            timestamp: new Date(),
-            message: 'Orders found successfully',
-            data: result.data,
-            meta: result.meta,
         };
     }
 }

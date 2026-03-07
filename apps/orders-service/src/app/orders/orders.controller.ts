@@ -2,6 +2,7 @@ import {
     ConfirmOrderPayloadDto,
     CreateOrderPayloadDto,
     OrderPaginationDto,
+    OrderPaginationPayloadDto,
     OrderResponseDto,
     UpdateOrderStatusPayloadDto,
     UpdateOrderStatusToPaidDto,
@@ -54,5 +55,12 @@ export class OrdersController {
     @MessagePattern({ cmd: 'find_all_orders' })
     async findAll(@Payload() payload: OrderPaginationDto): Promise<IPaginatedResponse<OrderResponseDto>> {
         return await this.ordersService.findAll(payload);
+    }
+
+    @MessagePattern({ cmd: 'find_all_my_orders' })
+    async findAllMyOrders(
+        @Payload() payload: OrderPaginationPayloadDto,
+    ): Promise<IPaginatedResponse<OrderResponseDto>> {
+        return await this.ordersService.findAllMyOrders(payload?.userId, payload?.data);
     }
 }
