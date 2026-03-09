@@ -1,4 +1,10 @@
-import { BaseResponseDto, LoginDto, LoginResponseDto, RegisterDto, UserResponseDto } from '@lumina/shared-dto';
+import {
+    BaseResponseDto,
+    LoginRequestDto,
+    LoginResponseDto,
+    RegisterRequestDto,
+    UserResponseDto,
+} from '@lumina/shared-dto';
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -8,8 +14,8 @@ export class AuthController {
 
     @Post('register')
     @HttpCode(HttpStatus.CREATED)
-    async register(@Body() registerDto: RegisterDto): Promise<BaseResponseDto<UserResponseDto>> {
-        const result = await this.authService.register(registerDto);
+    async register(@Body() dto: RegisterRequestDto): Promise<BaseResponseDto<UserResponseDto>> {
+        const result = await this.authService.register(dto);
         return {
             success: true,
             statusCode: HttpStatus.CREATED,
@@ -21,8 +27,8 @@ export class AuthController {
 
     @Post('login')
     @HttpCode(HttpStatus.OK)
-    async login(@Body() loginDto: LoginDto): Promise<BaseResponseDto<LoginResponseDto>> {
-        const result = await this.authService.login(loginDto);
+    async login(@Body() dto: LoginRequestDto): Promise<BaseResponseDto<LoginResponseDto>> {
+        const result = await this.authService.login(dto);
         return {
             success: true,
             statusCode: HttpStatus.OK,

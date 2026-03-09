@@ -1,8 +1,7 @@
 export * from './lib/base-response.dto';
 
 // Auth DTO
-export * from './lib/auth/login.dto';
-export * from './lib/auth/register.dto';
+export * from './lib/auth/index';
 
 // Products DTO
 export * from './lib/products/products/create-product.dto';

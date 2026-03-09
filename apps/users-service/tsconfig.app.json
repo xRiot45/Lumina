@@ -31,6 +31,9 @@
             "path": "../../libs/shared/interfaces/tsconfig.lib.json"
         },
         {
+            "path": "../../libs/shared/common/tsconfig.lib.json"
+        },
+        {
             "path": "../../libs/shared/utils/tsconfig.lib.json"
         },
         {

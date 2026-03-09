@@ -1,4 +1,4 @@
-import { UserRole } from '../enums/role.enum';
+import { UserRole } from '../enums/user-role.enum';
 
 export interface IUser {
     id: string;
@@ -10,6 +10,6 @@ export interface IUser {
     updatedAt: Date;
 }
 
-export interface IFindUserPayload {
+export interface IFindUserByEmailPayload {
     email: string;
 }

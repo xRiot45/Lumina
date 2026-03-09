@@ -1,7 +1,7 @@
-import { IRegisterUser } from '@lumina/shared-interfaces';
+import { IRegisterRequest } from '@lumina/shared-interfaces';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
-export class RegisterDto implements IRegisterUser {
+export class RegisterRequestDto implements IRegisterRequest {
     @IsNotEmpty()
     @IsString()
     fullName!: string;

@@ -2,11 +2,12 @@ import { LoggerModule } from '@lumina/shared-logger';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientsModule } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategy/jwt.strategy';
+import { getMicroserviceConfig, MICROSERVICES } from '@lumina/shared-common';
 
 @Module({
     imports: [
@@ -22,16 +23,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
             }),
             inject: [ConfigService],
         }),
-        ClientsModule.register([
-            {
-                name: 'AUTH_SERVICE',
-                transport: Transport.TCP,
-                options: {
-                    host: process.env.AUTH_SERVICE_HOST,
-                    port: Number(process.env.AUTH_SERVICE_PORT),
-                },
-            },
-        ]),
+        ClientsModule.register([getMicroserviceConfig(MICROSERVICES.AUTH)]),
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy, ConfigService],

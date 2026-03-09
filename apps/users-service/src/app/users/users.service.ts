@@ -1,10 +1,10 @@
-import { RegisterDto } from '@lumina/shared-dto';
 import { LoggerService } from '@lumina/shared-logger';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../../core/database/entities/user.entity';
+import { RegisterRequestDto } from '@lumina/shared-dto';
 
 @Injectable()
 export class UsersService {
@@ -14,21 +14,19 @@ export class UsersService {
         private readonly logger: LoggerService,
     ) {}
 
-    async create(data: RegisterDto) {
+    async createUser(payload: RegisterRequestDto) {
         try {
-            const user = this.usersRepository.create(data);
+            const user = this.usersRepository.create(payload);
             return await this.usersRepository.save(user);
-        } catch (error: any) {
-            if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
-                this.logger.warn(`Duplicate entry attempt for email: ${data.email}`);
-                throw new RpcException({
-                    statusCode: HttpStatus.CONFLICT,
-                    message: 'Email already exists',
-                    error: 'Conflict',
-                });
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
             }
 
-            this.logger.error(`Database Error: ${error.message}`, error.stack);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
+            this.logger.error({ message: 'Failed to create user in database', error: errorMessage, stack: errorStack });
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'Failed to create user in database',

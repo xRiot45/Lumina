@@ -1,6 +1,5 @@
 // Auth
-export * from './lib/auth/login-user.interface';
-export * from './lib/auth/register-user.interface';
+export * from './lib/auth/index';
 
 // User
 export * from './lib/users/user.interface';

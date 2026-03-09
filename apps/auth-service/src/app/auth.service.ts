@@ -1,96 +1,86 @@
-import { LoginDto, LoginResponseDto, RegisterDto, UserResponseDto } from '@lumina/shared-dto';
+import { MICROSERVICES, USER_COMMAND_PATTERN } from '@lumina/shared-common';
+import { LoginRequestDto, LoginResponseDto, RegisterRequestDto, UserResponseDto } from '@lumina/shared-dto';
 import { IJwtPayload, IUser } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
-import { catchError, firstValueFrom, throwError, timeout, TimeoutError } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthService {
-    private readonly context = AuthService.name;
-
     constructor(
-        @Inject('USERS_SERVICE')
-        private readonly usersClient: ClientProxy,
+        @Inject(MICROSERVICES.USERS) private readonly usersClient: ClientProxy,
         private readonly logger: LoggerService,
         private readonly jwtService: JwtService,
     ) {}
 
-    async register(registerDto: RegisterDto): Promise<UserResponseDto> {
-        const { fullName, email, password } = registerDto;
-        this.logger.log({ message: 'Initiating registration', email }, this.context);
+    async register(payload: RegisterRequestDto): Promise<UserResponseDto> {
+        const context = `[SERVICE] ${this.constructor.name} : ${this.register.name}`;
+        this.logger.log({ message: 'Initiating registration process ', fullName: payload.fullName }, context);
 
         try {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            const payload = {
-                fullName,
-                email,
-                password: hashedPassword,
-            };
-
-            const newUser = await firstValueFrom(
-                this.usersClient.send<UserResponseDto>({ cmd: 'create_user' }, payload).pipe(
-                    timeout(5000),
-                    catchError((err) => {
-                        if (err instanceof TimeoutError) {
-                            return throwError(() => new TimeoutError());
-                        }
-                        return throwError(() => err);
-                    }),
-                ),
+            const user = await firstValueFrom(
+                this.usersClient.send<IUser>(USER_COMMAND_PATTERN.FIND_USER_BY_EMAIL, payload.email),
             );
 
-            this.logger.log({ message: 'User registered', userId: newUser.id }, this.context);
-            return newUser;
-        } catch (error: any) {
-            if (error instanceof TimeoutError) {
-                this.logger.error(
-                    { message: 'Registration timeout', email },
-                    'Users Service Unreachable',
-                    this.context,
+            if (user) {
+                this.logger.warn(
+                    { message: 'Registration failed: Email already exists', email: payload.email },
+                    context,
                 );
                 throw new RpcException({
-                    statusCode: HttpStatus.REQUEST_TIMEOUT,
-                    message: 'Registration service is busy',
-                    error: 'Request Timeout',
+                    statusCode: HttpStatus.CONFLICT,
+                    message: 'Email already exists',
+                    error: 'Conflict',
                 });
             }
 
-            if (error.statusCode && error.message) {
-                if (error.statusCode === HttpStatus.CONFLICT) {
-                    this.logger.warn({ message: 'Registration failed: Duplicate', email }, this.context);
-                }
-                throw new RpcException(error);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(payload?.password, salt);
+
+            payload.fullName = payload.fullName.trim();
+            payload.email = payload.email.trim();
+            payload.password = hashedPassword;
+
+            const newUser = await firstValueFrom(
+                this.usersClient.send<UserResponseDto>(USER_COMMAND_PATTERN.CREATE_USER, payload),
+            );
+
+            this.logger.log({ message: 'User registered', userId: newUser.id }, context);
+            return newUser;
+        } catch (error: unknown) {
+            if (error instanceof RpcException) {
+                throw error;
             }
 
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+
             this.logger.error(
-                { message: 'Critical Auth Error', email },
-                (error as Error).stack || String(error),
-                this.context,
+                { message: 'An error occurred while registering', error: errorMessage },
+                errorStack,
+                context,
             );
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'An unexpected error occurred during registration',
+                message: 'An error occurred while registering',
                 error: 'Internal Server Error',
             });
         }
     }
 
-    async login(loginDto: LoginDto): Promise<LoginResponseDto> {
-        const { email, password } = loginDto;
-        this.logger.log({ message: 'Attempting login', email }, this.context);
+    async login(payload: LoginRequestDto): Promise<LoginResponseDto> {
+        const context = `[SERVICE] ${this.constructor.name} : ${this.login.name}`;
+        this.logger.log({ message: 'Attempting login', email: payload.email }, context);
 
-        const user = await this.findUserByEmail(email);
-
-        const isPasswordValid = user ? await bcrypt.compare(password, user.password) : false;
+        const user = await firstValueFrom(this.usersClient.send(USER_COMMAND_PATTERN.FIND_USER_BY_EMAIL, payload));
+        const isPasswordValid = user ? await bcrypt.compare(payload?.password, user.password) : false;
 
         if (!user || !isPasswordValid) {
-            this.logger.warn({ message: 'Login failed: Invalid credentials', email }, this.context);
+            this.logger.warn({ message: 'Login failed: Invalid credentials', email: payload.email }, context);
             throw new RpcException({
                 statusCode: HttpStatus.UNAUTHORIZED,
                 message: 'Invalid email or password',
@@ -99,31 +89,6 @@ export class AuthService {
         }
 
         return this.generateToken(user);
-    }
-
-    private async findUserByEmail(email: string) {
-        try {
-            return await firstValueFrom(
-                this.usersClient.send({ cmd: 'find_user_by_email' }, { email }).pipe(
-                    timeout(5000),
-                    catchError((err) => {
-                        if (err instanceof TimeoutError) {
-                            return throwError(() => new TimeoutError());
-                        }
-                        return throwError(() => err);
-                    }),
-                ),
-            );
-        } catch (error) {
-            if (error instanceof TimeoutError) {
-                throw new RpcException({
-                    statusCode: HttpStatus.REQUEST_TIMEOUT,
-                    message: 'Users service unreachable',
-                    error: 'Request Timeout',
-                });
-            }
-            throw error;
-        }
     }
 
     private async generateToken(user: IUser) {
@@ -140,7 +105,7 @@ export class AuthService {
             secret: process.env.JWT_ACCESS_TOKEN_SECRET,
         });
 
-        this.logger.log({ message: 'Login successful', userId: user.id }, this.context);
+        this.logger.log({ message: 'Login successful', userId: user.id });
 
         return { accessToken };
     }
