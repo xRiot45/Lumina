@@ -7,19 +7,17 @@ import {
 } from '@lumina/shared-dto';
 import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
-import { autoGenerateSlug, isDatabaseError } from '@lumina/shared-utils';
+import { autoGenerateSlug } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { ProductEntity } from '../../core/database/entities/product.entity';
 import { ProductCategoryEntity } from '../../core/database/entities/product_category.entity';
 import { ProductVariantEntity } from '../../core/database/entities/product_variant.entity';
 
 @Injectable()
 export class ProductsService {
-    private readonly context = `[SERVICE] ${ProductsService.name}`;
-
     constructor(
         @InjectRepository(ProductEntity)
         private readonly productRepository: Repository<ProductEntity>,
@@ -31,15 +29,16 @@ export class ProductsService {
     ) {}
 
     async create(dto: CreateProductDto): Promise<ProductResponseDto> {
+        const context = `[SERVICE] ${ProductsService.name} ${this.create.name}`;
         const { name, description, image, categoryId, variants } = dto;
 
         let calculatedBasePrice = 0;
-        this.logger.log({ message: 'Initiating product creation', dto }, this.context);
+        this.logger.log({ message: 'Initiating product creation', dto }, context);
 
         try {
             const productCategory = await this.productCategoryRepository.findOneBy({ id: categoryId });
             if (!productCategory) {
-                this.logger.warn({ message: 'Product creation failed: Category not found', dto }, this.context);
+                this.logger.warn({ message: 'Product creation failed: Category not found', dto }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Category not found',
@@ -47,7 +46,37 @@ export class ProductsService {
                 });
             }
 
+            const slug = autoGenerateSlug(name);
+            const existingProduct = await this.productRepository.findOne({
+                where: [{ name: name }, { slug: slug }],
+            });
+
+            if (existingProduct) {
+                this.logger.warn({ message: `Creation failed: Duplicate Product Name or Slug`, name, slug }, context);
+                throw new RpcException({
+                    statusCode: HttpStatus.CONFLICT,
+                    message: 'A product with this Name or Slug already exists.',
+                    error: 'Conflict',
+                });
+            }
+
             if (variants && variants.length > 0) {
+                const skus = variants.map((v) => v.sku);
+
+                const existingVariants = await this.productVariantRepository.find({
+                    where: { sku: In(skus) },
+                });
+
+                if (existingVariants.length > 0) {
+                    const duplicateSkus = existingVariants.map((v) => v.sku).join(', ');
+                    this.logger.warn({ message: `Creation failed: Duplicate SKU(s)`, duplicateSkus }, context);
+                    throw new RpcException({
+                        statusCode: HttpStatus.CONFLICT,
+                        message: `A variant with SKU(s) [${duplicateSkus}] already exists.`,
+                        error: 'Conflict',
+                    });
+                }
+
                 const allVariantsPrices = variants.map((v) => Number(v.price));
                 const lowestVariantPrice = Math.min(...allVariantsPrices);
 
@@ -56,15 +85,15 @@ export class ProductsService {
                 }
             }
 
-            const productVariants = variants.map((variant) => {
-                return this.productVariantRepository.create({
-                    sku: variant.sku,
-                    price: variant.price,
-                    stock: variant.stock,
-                });
-            });
+            const productVariants =
+                variants?.map((variant) => {
+                    return this.productVariantRepository.create({
+                        sku: variant.sku,
+                        price: variant.price,
+                        stock: variant.stock,
+                    });
+                }) || [];
 
-            const slug = autoGenerateSlug(name);
             const newProduct = this.productRepository.create({
                 name,
                 slug,
@@ -79,11 +108,11 @@ export class ProductsService {
 
             this.logger.log(
                 { message: 'Product successfully created with variants', productId: savedProduct.id },
-                this.context,
+                context,
             );
 
             return savedProduct;
-        } catch (error: unknown) {
+        } catch (error) {
             if (error instanceof RpcException) {
                 throw error;
             }
@@ -91,56 +120,19 @@ export class ProductsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            if (isDatabaseError(error)) {
-                if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
-                    const isSkuDuplicate = errorMessage.toLowerCase().includes('sku');
-                    const conflictField = isSkuDuplicate ? 'SKU' : 'Product Name/Slug';
-
-                    this.logger.warn(
-                        { message: `Creation failed: Duplicate ${conflictField}`, name, errorMessage },
-                        this.context,
-                    );
-
-                    throw new RpcException({
-                        statusCode: HttpStatus.CONFLICT,
-                        message: `A product or variant with this ${conflictField} already exists.`,
-                        error: 'Conflict',
-                    });
-                }
-
-                if (error.code === 'ER_BAD_FIELD_ERROR') {
-                    throw new RpcException({
-                        statusCode: HttpStatus.BAD_REQUEST,
-                        message: 'Invalid Category ID format',
-                        error: 'Bad Request',
-                    });
-                }
-            }
-
-            if (errorMessage.toLowerCase().includes('uuid')) {
-                throw new RpcException({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    message: 'Invalid ID format provided',
-                    error: 'Bad Request',
-                });
-            }
-
-            this.logger.error(
-                { message: 'Failed to create product and variants', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to create product', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: 'An error occurred while creating the product',
+                message: 'An error occurred while create product',
                 error: 'Internal Server Error',
             });
         }
     }
 
     async findAll(dto: PaginationDto): Promise<IPaginatedResponse<ProductResponseDto>> {
-        this.logger.log({ message: 'Initiating product find all', dto }, this.context);
+        const context = `[SERVICE] ${ProductsService.name} ${this.findAll.name}`;
+        this.logger.log({ message: 'Initiating product find all', dto }, context);
 
         try {
             const page = dto?.page ?? 1;
@@ -169,7 +161,7 @@ export class ProductsService {
                 },
             };
 
-            this.logger.log({ message: 'Product find all successful', result }, this.context);
+            this.logger.log({ message: 'Product find all successful', result }, context);
             return result;
         } catch (error) {
             if (error instanceof RpcException) {
@@ -179,11 +171,7 @@ export class ProductsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error(
-                { message: 'Failed to find all products', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to find all products', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -194,7 +182,8 @@ export class ProductsService {
     }
 
     async findBySlug(slug: string): Promise<ProductResponseDto> {
-        this.logger.log({ message: 'Initiating product find by slug', slug }, this.context);
+        const context = `[SERVICE] ${ProductsService.name} ${this.findBySlug.name}`;
+        this.logger.log({ message: 'Initiating product find by slug', slug }, context);
 
         try {
             const product = await this.productRepository.findOne({
@@ -203,7 +192,7 @@ export class ProductsService {
             });
 
             if (!product) {
-                this.logger.warn({ message: 'Product not found', slug }, this.context);
+                this.logger.warn({ message: 'Product not found', slug }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Product not found',
@@ -211,7 +200,7 @@ export class ProductsService {
                 });
             }
 
-            this.logger.log({ message: 'Product found', slug: product.slug, name: product.name }, this.context);
+            this.logger.log({ message: 'Product found', slug: product.slug, name: product.name }, context);
             return product;
         } catch (error) {
             if (error instanceof RpcException) {
@@ -221,11 +210,7 @@ export class ProductsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error(
-                { message: 'Failed to find product by slug', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to find product by slug', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -236,7 +221,8 @@ export class ProductsService {
     }
 
     async findById(id: string): Promise<ProductResponseDto> {
-        this.logger.log({ message: 'Initiating product find by id', id }, this.context);
+        const context = `[SERVICE] ${ProductsService.name} ${this.findById.name}`;
+        this.logger.log({ message: 'Initiating product find by id', id }, context);
 
         try {
             const product = await this.productRepository.findOne({
@@ -245,7 +231,7 @@ export class ProductsService {
             });
 
             if (!product) {
-                this.logger.warn({ message: 'Product not found', id }, this.context);
+                this.logger.warn({ message: 'Product not found', id }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Product not found',
@@ -253,7 +239,7 @@ export class ProductsService {
                 });
             }
 
-            this.logger.log({ message: 'Product found', id: product.id, name: product.name }, this.context);
+            this.logger.log({ message: 'Product found', id: product.id, name: product.name }, context);
             return product;
         } catch (error) {
             if (error instanceof RpcException) {
@@ -263,11 +249,7 @@ export class ProductsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error(
-                { message: 'Failed to find product by slug', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to find product by slug', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -278,9 +260,10 @@ export class ProductsService {
     }
 
     async update(productId: string, data: UpdateProductDto): Promise<ProductResponseDto> {
+        const context = `[SERVICE] ${ProductsService.name} ${this.update.name}`;
         const { name, description, image, categoryId, variants } = data;
 
-        this.logger.log({ message: 'Initiating product update', data }, this.context);
+        this.logger.log({ message: 'Initiating product update', data }, context);
 
         try {
             const productCategory = await this.productCategoryRepository.findOneBy({ id: categoryId });
@@ -326,7 +309,7 @@ export class ProductsService {
             });
 
             if (product.name !== name) {
-                this.logger.log({ message: `Product name changed. Generating new slug for: ${name}` }, this.context);
+                this.logger.log({ message: `Product name changed. Generating new slug for: ${name}` }, context);
                 product.name = name;
                 product.slug = autoGenerateSlug(name);
             }
@@ -339,7 +322,7 @@ export class ProductsService {
 
             await this.productRepository.save(product);
 
-            this.logger.log({ message: 'Product updated successfully', productId }, this.context);
+            this.logger.log({ message: 'Product updated successfully', productId }, context);
             return product;
         } catch (error) {
             if (error instanceof RpcException) {
@@ -349,7 +332,7 @@ export class ProductsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error({ message: 'Failed to update product', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Failed to update product', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -360,7 +343,8 @@ export class ProductsService {
     }
 
     async remove(productId: string): Promise<{ success: boolean }> {
-        this.logger.log({ message: 'Initiating product deletion', productId }, this.context);
+        const context = `[SERVICE] ${ProductsService.name} ${this.remove.name}`;
+        this.logger.log({ message: 'Initiating product deletion', productId }, context);
 
         try {
             const product = await this.productRepository.findOne({
@@ -369,7 +353,7 @@ export class ProductsService {
             });
 
             if (!product) {
-                this.logger.warn({ message: 'Product deletion failed: Product not found', productId }, this.context);
+                this.logger.warn({ message: 'Product deletion failed: Product not found', productId }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Product not found',
@@ -383,7 +367,7 @@ export class ProductsService {
 
             await this.productRepository.remove(product);
 
-            this.logger.log({ message: 'Product and its variants deleted successfully', productId }, this.context);
+            this.logger.log({ message: 'Product and its variants deleted successfully', productId }, context);
             return { success: true };
         } catch (error) {
             if (error instanceof RpcException) {
@@ -393,7 +377,7 @@ export class ProductsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error({ message: 'Failed to delete product', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Failed to delete product', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -404,12 +388,16 @@ export class ProductsService {
     }
 
     async handleReduceStock(items: StockReductionItemDto[]): Promise<void> {
-        this.logger.log(`[STOCK] Starting reduction for ${items.length} items`);
+        const context = `[SERVICE] ${ProductsService.name} ${this.handleReduceStock.name}`;
+        this.logger.log({ message: 'Initiating stock reduction', items }, context);
 
         try {
             await Promise.all(
                 items.map(async (item) => {
-                    this.logger.debug(`Reducing Variant: ${item.variantId} by Quantity: ${item.quantity}`);
+                    this.logger.debug(
+                        { message: `Reducing Variant: ${item.variantId} by Quantity: ${item.quantity}` },
+                        context,
+                    );
 
                     const result = await this.productVariantRepository.decrement(
                         {
@@ -420,18 +408,16 @@ export class ProductsService {
                     );
 
                     if (result.affected === 0) {
-                        this.logger.warn(
-                            `[STOCK WARNING] Variant ${item.variantId} not found or mismatch with Product ${item.productId}`,
-                        );
+                        this.logger.warn({ message: `Failed to reduce stock for Variant: ${item.variantId}` }, context);
                     }
                 }),
             );
 
-            this.logger.log(`[STOCK SUCCESS] All items processed successfully.`);
+            this.logger.log({ message: 'Stock reduced successfully' }, context);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
 
-            this.logger.error(`[STOCK ERROR] Failed to reduce stock: ${errorMessage}`);
+            this.logger.error({ message: 'Failed to reduce stock', error: errorMessage }, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
