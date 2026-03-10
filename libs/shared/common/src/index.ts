@@ -16,3 +16,4 @@ export * from './lib/interceptors/response.interceptor';
 export * from './lib/constants/auth/index';
 export * from './lib/constants/users/index';
 export * from './lib/constants/products/index';
+export * from './lib/constants/product_categories/index';

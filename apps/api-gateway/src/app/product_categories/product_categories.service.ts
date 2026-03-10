@@ -1,3 +1,4 @@
+import { MICROSERVICES, PRODUCT_CATEGORIES_COMMAND_PATTERN } from '@lumina/shared-common';
 import { CreateProductCategoryDto, PaginationDto, ProductCategoryResponseDto } from '@lumina/shared-dto';
 import {
     IDeleteProductCategoryPayload,
@@ -12,21 +13,22 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ProductCategoriesService {
-    private readonly context = `[GATEWAY] ${ProductCategoriesService.name}`;
-
     constructor(
-        @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
+        @Inject(MICROSERVICES.PRODUCTS) private readonly productsClient: ClientProxy,
         private readonly logger: LoggerService,
     ) {}
 
     async create(dto: CreateProductCategoryDto): Promise<ProductCategoryResponseDto> {
-        this.logger.log(`[GATEWAY] Incoming create request for: ${JSON.stringify(dto)}`, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} ${this.create.name}`;
+        this.logger.log({ message: 'Initiating product category create', dto }, context);
 
         try {
-            const response = await firstValueFrom(this.productsClient.send({ cmd: 'create_product_category' }, dto));
+            const response = await firstValueFrom(
+                this.productsClient.send(PRODUCT_CATEGORIES_COMMAND_PATTERN.CREATE_PRODUCT_CATEGORY, dto),
+            );
             return mapToDto(ProductCategoryResponseDto, response);
         } catch (error: unknown) {
-            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+            this.logger.error({ message: '[Gateway] Raw Error from Microservice', error }, context);
 
             if (isMicroserviceError(error)) {
                 const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
@@ -66,15 +68,16 @@ export class ProductCategoriesService {
     }
 
     async findAll(query: PaginationDto): Promise<IPaginatedResponse<ProductCategoryResponseDto>> {
-        this.logger.log(`[GATEWAY] Incoming find all request`, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.findAll.name}`;
+        this.logger.log({ message: 'Initiating product category find all', query }, context);
 
         try {
             const response = await firstValueFrom(
-                this.productsClient.send({ cmd: 'find_all_product_categories' }, query),
+                this.productsClient.send(PRODUCT_CATEGORIES_COMMAND_PATTERN.FIND_ALL_PRODUCT_CATEGORIES, query),
             );
             return response;
         } catch (error: unknown) {
-            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+            this.logger.error({ message: `Raw Error from Microservice: ${JSON.stringify(error)}` }, context);
 
             if (isMicroserviceError(error)) {
                 const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
@@ -114,13 +117,16 @@ export class ProductCategoriesService {
     }
 
     async findById(id: string): Promise<ProductCategoryResponseDto> {
-        this.logger.log(`[GATEWAY] Incoming find by id request for: ${id}`, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.findById.name}`;
+        this.logger.log({ message: 'Initiating product category find by id', id }, context);
 
         try {
-            const response = await firstValueFrom(this.productsClient.send({ cmd: 'find_product_category_by_id' }, id));
+            const response = await firstValueFrom(
+                this.productsClient.send(PRODUCT_CATEGORIES_COMMAND_PATTERN.FIND_PRODUCT_CATEGORY_BY_ID, id),
+            );
             return mapToDto(ProductCategoryResponseDto, response);
         } catch (error: unknown) {
-            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+            this.logger.error({ message: `Raw Error from Microservice: ${JSON.stringify(error)}` }, context);
 
             if (isMicroserviceError(error)) {
                 const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
@@ -160,7 +166,8 @@ export class ProductCategoriesService {
     }
 
     async update(id: string, dto: CreateProductCategoryDto): Promise<ProductCategoryResponseDto> {
-        this.logger.log(`[GATEWAY] Incoming update request for: ${id}`, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.update.name}`;
+        this.logger.log({ message: 'Initiating product category update', id, dto }, context);
 
         const payload: IUpdateProductCategoryPayload = {
             id,
@@ -169,11 +176,11 @@ export class ProductCategoriesService {
 
         try {
             const response = await firstValueFrom(
-                this.productsClient.send({ cmd: 'update_product_category' }, payload),
+                this.productsClient.send(PRODUCT_CATEGORIES_COMMAND_PATTERN.UPDATE_PRODUCT_CATEGORY, payload),
             );
             return mapToDto(ProductCategoryResponseDto, response);
         } catch (error: unknown) {
-            this.logger.error(`[Gateway] Raw Error from Microservice: ${JSON.stringify(error)}`);
+            this.logger.error({ message: `Raw Error from Microservice: ${JSON.stringify(error)}` }, context);
 
             if (isMicroserviceError(error)) {
                 const status = error.statusCode || error.status || HttpStatus.INTERNAL_SERVER_ERROR;
@@ -213,7 +220,8 @@ export class ProductCategoriesService {
     }
 
     async remove(id: string): Promise<void> {
-        this.logger.log(`[GATEWAY] Incoming remove request for: ${id}`, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.remove.name}`;
+        this.logger.log({ message: 'Initiating product category remove', id }, context);
 
         const payload: IDeleteProductCategoryPayload = {
             id,
