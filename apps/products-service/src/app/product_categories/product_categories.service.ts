@@ -6,7 +6,7 @@ import {
 } from '@lumina/shared-dto';
 import { IPaginatedResponse } from '@lumina/shared-interfaces';
 import { LoggerService } from '@lumina/shared-logger';
-import { autoGenerateSlug, isDatabaseError } from '@lumina/shared-utils';
+import { autoGenerateSlug } from '@lumina/shared-utils';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,8 +15,6 @@ import { ProductCategoryEntity } from '../../core/database/entities/product_cate
 
 @Injectable()
 export class ProductCategoriesService {
-    private readonly context = `[SERVICE] ${ProductCategoriesService.name}`;
-
     constructor(
         @InjectRepository(ProductCategoryEntity)
         private readonly productCategoriesRepository: Repository<ProductCategoryEntity>,
@@ -24,11 +22,26 @@ export class ProductCategoriesService {
     ) {}
 
     async create(dto: CreateProductCategoryDto): Promise<ProductCategoryResponseDto> {
+        const context = `[SERVICE] ${this.constructor.name} : ${this.create.name}`;
         const { name } = dto;
-        this.logger.log({ message: 'Initiating category creation', name }, this.context);
+
+        this.logger.log({ message: 'Initiating category creation', name }, context);
 
         try {
             const slug = autoGenerateSlug(name);
+            const existingCategory = await this.productCategoriesRepository.findOne({
+                where: [{ name: name }, { slug: slug }],
+            });
+
+            if (existingCategory) {
+                this.logger.warn({ message: 'Category creation failed: Duplicate', name }, context);
+                throw new RpcException({
+                    statusCode: HttpStatus.CONFLICT,
+                    message: 'Category with this name or slug already exists',
+                    error: 'Conflict',
+                });
+            }
+
             const newCategory = this.productCategoriesRepository.create({
                 name,
                 slug,
@@ -36,7 +49,7 @@ export class ProductCategoriesService {
 
             await this.productCategoriesRepository.save(newCategory);
 
-            this.logger.log({ message: 'Category created', id: newCategory.id, name }, this.context);
+            this.logger.log({ message: 'Category created', id: newCategory.id, name }, context);
             return newCategory;
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -46,18 +59,7 @@ export class ProductCategoriesService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            if (isDatabaseError(error)) {
-                if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
-                    this.logger.warn({ message: 'Category creation failed: Duplicate', name }, this.context);
-                    throw new RpcException({
-                        statusCode: HttpStatus.CONFLICT,
-                        message: 'Category with this name or slug already exists',
-                        error: 'Conflict',
-                    });
-                }
-            }
-
-            this.logger.error({ message: 'Error creating category', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Error creating category', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -68,7 +70,8 @@ export class ProductCategoriesService {
     }
 
     async findAll(dto: PaginationDto): Promise<IPaginatedResponse<ProductCategoryResponseDto>> {
-        this.logger.log({ message: 'Initiating paginated category find all', dto }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.findAll.name}`;
+        this.logger.log({ message: 'Initiating paginated category find all', dto }, context);
 
         try {
             const page = dto?.page ?? 1;
@@ -102,7 +105,7 @@ export class ProductCategoriesService {
                     count: categories.length,
                     totalItems,
                 },
-                this.context,
+                context,
             );
 
             return result;
@@ -114,7 +117,7 @@ export class ProductCategoriesService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error({ message: 'Error finding categories', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Error finding categories', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -125,12 +128,13 @@ export class ProductCategoriesService {
     }
 
     async findById(id: string): Promise<ProductCategoryResponseDto> {
-        this.logger.log({ message: 'Initiating category find by id', id }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.findById.name}`;
+        this.logger.log({ message: 'Initiating category find by id', id }, context);
 
         try {
             const category = await this.productCategoriesRepository.findOneBy({ id });
             if (!category) {
-                this.logger.warn({ message: 'Category not found', id }, this.context);
+                this.logger.warn({ message: 'Category not found', id }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Category not found',
@@ -138,7 +142,7 @@ export class ProductCategoriesService {
                 });
             }
 
-            this.logger.log({ message: 'Category found', id: category.id, name: category.name }, this.context);
+            this.logger.log({ message: 'Category found', id: category.id, name: category.name }, context);
             return category;
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -148,38 +152,7 @@ export class ProductCategoriesService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            if (isDatabaseError(error)) {
-                if (error.code === 'ER_BAD_FIELD_ERROR') {
-                    this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
-                    throw new RpcException({
-                        statusCode: HttpStatus.BAD_REQUEST,
-                        message: 'Invalid category ID format',
-                        error: 'Bad Request',
-                    });
-                }
-
-                if (error.code === 'ER_NO_DEFAULT_FOR_FIELD') {
-                    throw new RpcException({
-                        statusCode: HttpStatus.NOT_FOUND,
-                        message: 'Category not found',
-                        error: 'Not Found',
-                    });
-                }
-            }
-
-            if (errorMessage.toLowerCase().includes('uuid')) {
-                this.logger.warn(
-                    { message: 'Invalid ID format provided (UUID error)', id, errorMessage },
-                    this.context,
-                );
-                throw new RpcException({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    message: 'Invalid category ID format',
-                    error: 'Bad Request',
-                });
-            }
-
-            this.logger.error({ message: 'Error finding category', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Error finding category', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -190,12 +163,13 @@ export class ProductCategoriesService {
     }
 
     async update(id: string, dto: UpdateProductCategoryDto): Promise<ProductCategoryResponseDto> {
-        this.logger.log({ message: 'Initiating category update', id }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.update.name}`;
+        this.logger.log({ message: 'Initiating category update', id }, context);
 
         try {
             const category = await this.productCategoriesRepository.findOneBy({ id });
             if (!category) {
-                this.logger.warn({ message: 'Category not found', id }, this.context);
+                this.logger.warn({ message: 'Category not found', id }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Category not found',
@@ -210,7 +184,7 @@ export class ProductCategoriesService {
                 await this.productCategoriesRepository.save(category);
             }
 
-            this.logger.log({ message: 'Category updated', id: category.id, name: category.name }, this.context);
+            this.logger.log({ message: 'Category updated', id: category.id, name: category.name }, context);
             return category;
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -220,42 +194,7 @@ export class ProductCategoriesService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            if (isDatabaseError(error)) {
-                if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
-                    this.logger.warn(
-                        { message: 'Update failed: Category name already exists', id, name: dto.name },
-                        this.context,
-                    );
-                    throw new RpcException({
-                        statusCode: HttpStatus.CONFLICT,
-                        message: 'Category with this name or slug already exists',
-                        error: 'Conflict',
-                    });
-                }
-
-                if (error.code === 'ER_BAD_FIELD_ERROR') {
-                    this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
-                    throw new RpcException({
-                        statusCode: HttpStatus.BAD_REQUEST,
-                        message: 'Invalid category ID format',
-                        error: 'Bad Request',
-                    });
-                }
-            }
-
-            if (errorMessage.toLowerCase().includes('uuid')) {
-                this.logger.warn(
-                    { message: 'Invalid ID format provided (UUID error)', id, errorMessage },
-                    this.context,
-                );
-                throw new RpcException({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    message: 'Invalid category ID format',
-                    error: 'Bad Request',
-                });
-            }
-
-            this.logger.error({ message: 'Error updating category', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Error updating category', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -266,13 +205,13 @@ export class ProductCategoriesService {
     }
 
     async remove(id: string): Promise<{ success: boolean }> {
-        this.logger.log({ message: 'Initiating category removal', id }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.remove.name}`;
+        this.logger.log({ message: 'Initiating category removal', id }, context);
 
         try {
             const category = await this.productCategoriesRepository.findOneBy({ id });
-
             if (!category) {
-                this.logger.warn({ message: 'Category not found', id }, this.context);
+                this.logger.warn({ message: 'Category not found', id }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Category not found',
@@ -282,7 +221,7 @@ export class ProductCategoriesService {
 
             await this.productCategoriesRepository.remove(category);
 
-            this.logger.log({ message: 'Category removed', id: category.id, name: category.name }, this.context);
+            this.logger.log({ message: 'Category removed', id: category.id, name: category.name }, context);
             return { success: true };
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -292,40 +231,7 @@ export class ProductCategoriesService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            if (isDatabaseError(error)) {
-                if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.errno === 1451) {
-                    this.logger.warn({ message: 'Deletion failed: Category in use', id }, this.context);
-                    throw new RpcException({
-                        statusCode: HttpStatus.CONFLICT,
-                        message:
-                            'Cannot delete this category because it is still associated with one or more products.',
-                        error: 'Conflict',
-                    });
-                }
-
-                if (error.code === 'ER_BAD_FIELD_ERROR') {
-                    this.logger.warn({ message: 'Invalid ID format provided', id }, this.context);
-                    throw new RpcException({
-                        statusCode: HttpStatus.BAD_REQUEST,
-                        message: 'Invalid category ID format',
-                        error: 'Bad Request',
-                    });
-                }
-            }
-
-            if (errorMessage.toLowerCase().includes('uuid')) {
-                this.logger.warn(
-                    { message: 'Invalid ID format provided (UUID error)', id, errorMessage },
-                    this.context,
-                );
-                throw new RpcException({
-                    statusCode: HttpStatus.BAD_REQUEST,
-                    message: 'Invalid category ID format',
-                    error: 'Bad Request',
-                });
-            }
-
-            this.logger.error({ message: 'Error removing category', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Error removing category', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
