@@ -40,7 +40,7 @@ export class ProductsController {
         FileInterceptor('image', {
             storage: createStorageConfig('products'),
             fileFilter: fileFilter,
-            limits: { fileSize: 5 * 1024 * 1024 }, // Limit 5MB
+            limits: { fileSize: 5 * 1024 * 1024 },
         }),
     )
     async create(
@@ -48,7 +48,6 @@ export class ProductsController {
         @UploadedFile() file: Express.Multer.File,
     ): Promise<BaseResponseDto<ProductResponseDto>> {
         const result = await this.productsService.create(dto, file);
-
         return {
             success: true,
             statusCode: HttpStatus.CREATED,

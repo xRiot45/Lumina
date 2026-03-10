@@ -1,23 +1,12 @@
 import { LoggerModule } from '@lumina/shared-logger';
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientsModule } from '@nestjs/microservices';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
+import { getMicroserviceConfig, MICROSERVICES } from '@lumina/shared-common';
 
 @Module({
-    imports: [
-        LoggerModule,
-        ClientsModule.register([
-            {
-                name: 'PRODUCTS_SERVICE',
-                transport: Transport.TCP,
-                options: {
-                    host: process.env.PRODUCTS_SERVICE_HOST,
-                    port: Number(process.env.PRODUCTS_SERVICE_PORT),
-                },
-            },
-        ]),
-    ],
+    imports: [LoggerModule, ClientsModule.register([getMicroserviceConfig(MICROSERVICES.PRODUCTS)])],
     controllers: [ProductsController],
     providers: [ProductsService],
 })

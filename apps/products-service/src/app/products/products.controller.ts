@@ -1,3 +1,4 @@
+import { PRODUCTS_COMMAND_PATTERN, PRODUCTS_EVENT_PATTERN } from '@lumina/shared-common';
 import {
     CreateProductDto,
     PaginationDto,
@@ -19,37 +20,37 @@ import { ProductsService } from './products.service';
 export class ProductsController {
     constructor(private readonly productsService: ProductsService) {}
 
-    @MessagePattern({ cmd: 'create_product' })
+    @MessagePattern(PRODUCTS_COMMAND_PATTERN.CREATE_PRODUCT)
     async create(@Payload() payload: CreateProductDto): Promise<ProductResponseDto> {
         return await this.productsService.create(payload);
     }
 
-    @MessagePattern({ cmd: 'find_all_products' })
+    @MessagePattern(PRODUCTS_COMMAND_PATTERN.FIND_ALL_PRODUCTS)
     async findAll(@Payload() payload: PaginationDto): Promise<IPaginatedResponse<ProductResponseDto>> {
         return await this.productsService.findAll(payload);
     }
 
-    @MessagePattern({ cmd: 'find_product_by_slug' })
+    @MessagePattern(PRODUCTS_COMMAND_PATTERN.FIND_PRODUCT_BY_SLUG)
     async findBySlug(@Payload() payload: IFindProductBySlugPayload): Promise<ProductResponseDto> {
         return await this.productsService.findBySlug(payload?.slug);
     }
 
-    @MessagePattern({ cmd: 'find_product_by_id' })
+    @MessagePattern(PRODUCTS_COMMAND_PATTERN.FIND_PRODUCT_BY_ID)
     async findById(@Payload() payload: IFindProductByIdPayload): Promise<ProductResponseDto> {
         return await this.productsService.findById(payload?.id);
     }
 
-    @MessagePattern({ cmd: 'update_product' })
+    @MessagePattern(PRODUCTS_COMMAND_PATTERN.UPDATE_PRODUCT)
     async update(@Payload() payload: UpdateProductPayloadDto): Promise<ProductResponseDto> {
         return await this.productsService.update(payload?.productId, payload?.data);
     }
 
-    @MessagePattern({ cmd: 'delete_product' })
+    @MessagePattern(PRODUCTS_COMMAND_PATTERN.DELETE_PRODUCT)
     async remove(@Payload() payload: IDeleteProductPayload): Promise<{ success: boolean }> {
         return await this.productsService.remove(payload.id);
     }
 
-    @EventPattern('reduce_product_variant_stock')
+    @EventPattern(PRODUCTS_EVENT_PATTERN.REDUCE_PRODUCT_VARIANT_STOCK)
     async reduceProductVariantStock(@Payload() payload: ReduceStockEventDto) {
         return await this.productsService.handleReduceStock(payload.items);
     }
