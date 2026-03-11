@@ -9,13 +9,12 @@ import { LoggerService } from '@lumina/shared-logger';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { AddToCartDto, CartResponseDto, EnrichedCartItemResponseDto, ProductResponseDto } from '@lumina/shared-dto';
 import { firstValueFrom } from 'rxjs';
+import { MICROSERVICES } from '@lumina/shared-common';
 
 @Injectable()
 export class CartsService {
-    private readonly context = `[SERVICE] ${CartsService.name}`;
-
     constructor(
-        @Inject('PRODUCTS_SERVICE') private readonly productsClient: ClientProxy,
+        @Inject(MICROSERVICES.PRODUCTS) private readonly productsClient: ClientProxy,
         @InjectRepository(CartEntity)
         private readonly cartRepository: Repository<CartEntity>,
         @InjectRepository(CartItemEntity)
@@ -24,7 +23,8 @@ export class CartsService {
     ) {}
 
     async addToCart(userId: string, data: AddToCartDto): Promise<CartResponseDto> {
-        this.logger.log({ message: 'Initiating add to cart', data }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.addToCart.name}`;
+        this.logger.log({ message: 'Initiating add to cart', data }, context);
 
         try {
             let cart = await this.cartRepository.findOne({
@@ -33,7 +33,7 @@ export class CartsService {
             });
 
             if (!cart) {
-                this.logger.log({ message: 'Cart not found, creating new cart', userId }, this.context);
+                this.logger.log({ message: 'Cart not found, creating new cart', userId }, context);
                 cart = this.cartRepository.create({ userId });
                 await this.cartRepository.save(cart);
                 cart.items = [];
@@ -48,10 +48,7 @@ export class CartsService {
                 existingItem.quantity += data.quantity;
 
                 await this.cartItemRepository.save(existingItem);
-                this.logger.log(
-                    { message: 'Updated existing cart item quantity', itemId: existingItem.id },
-                    this.context,
-                );
+                this.logger.log({ message: 'Updated existing cart item quantity', itemId: existingItem.id }, context);
             } else {
                 const newItem = this.cartItemRepository.create({
                     cart: cart,
@@ -62,7 +59,7 @@ export class CartsService {
 
                 await this.cartItemRepository.save(newItem);
                 cart.items.push(newItem);
-                this.logger.log({ message: 'Added new item to cart', cartId: cart.id }, this.context);
+                this.logger.log({ message: 'Added new item to cart', cartId: cart.id }, context);
             }
 
             const updatedCart = await this.cartRepository.findOne({
@@ -79,7 +76,7 @@ export class CartsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error({ message: 'Failed to add item to cart', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Failed to add item to cart', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -90,7 +87,8 @@ export class CartsService {
     }
 
     async getCart(userId: string, query: IPaginationQuery): Promise<IPaginatedResponse<EnrichedCartItemResponseDto>> {
-        this.logger.log({ message: 'Fetching cart and enriching data for user', userId }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.getCart.name}`;
+        this.logger.log({ message: 'Fetching cart and enriching data for user', userId }, context);
 
         try {
             const page: number = Number(query?.page) || 1;
@@ -104,7 +102,7 @@ export class CartsService {
 
             const cart = await this.cartRepository.findOne({ where: { userId } });
             if (!cart) {
-                this.logger.log({ message: 'Cart not found, returning empty state', userId }, this.context);
+                this.logger.log({ message: 'Cart not found, returning empty state', userId }, context);
                 return emptyResponse;
             }
 
@@ -137,10 +135,10 @@ export class CartsService {
                         if (productData) {
                             productsMap.set(productId, productData as ProductResponseDto);
                         } else {
-                            this.logger.warn(`Product API returned empty for ID: ${productId}`, this.context);
+                            this.logger.warn(`Product API returned empty for ID: ${productId}`, context);
                         }
                     } catch {
-                        this.logger.warn(`Failed to fetch product detail for ID: ${productId}`, this.context);
+                        this.logger.warn(`Failed to fetch product detail for ID: ${productId}`, context);
                     }
                 }),
             );
@@ -193,7 +191,7 @@ export class CartsService {
                 meta: { page, limit, totalItems, totalPages },
             };
 
-            this.logger.log({ message: 'Cart enriched successfully', userId }, this.context);
+            this.logger.log({ message: 'Cart enriched successfully', userId }, context);
             return result;
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -203,7 +201,7 @@ export class CartsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error({ message: 'Failed to fetch cart', error: errorMessage }, errorStack, this.context);
+            this.logger.error({ message: 'Failed to fetch cart', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -214,7 +212,8 @@ export class CartsService {
     }
 
     async deleteItemFromCart(userId: string, cartItemId: string): Promise<{ success: boolean }> {
-        this.logger.log({ message: 'Deleting cart item', userId, cartItemId }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.deleteItemFromCart.name}`;
+        this.logger.log({ message: 'Deleting cart item', userId, cartItemId }, context);
 
         try {
             const cartItem = await this.cartItemRepository.findOne({
@@ -223,7 +222,7 @@ export class CartsService {
             });
 
             if (!cartItem || cartItem.cart?.userId !== userId) {
-                this.logger.warn({ message: 'Cart Item not found or unauthorized', userId, cartItemId }, this.context);
+                this.logger.warn({ message: 'Cart Item not found or unauthorized', userId, cartItemId }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Cart item not found',
@@ -240,11 +239,11 @@ export class CartsService {
             });
 
             if (remainingItemsCount === 0) {
-                this.logger.log({ message: 'Cart is empty, deleting parent cart', cartId }, this.context);
+                this.logger.log({ message: 'Cart is empty, deleting parent cart', cartId }, context);
                 await this.cartRepository.delete(cartId);
             }
 
-            this.logger.log({ message: 'Cart item deleted successfully', userId, cartItemId }, this.context);
+            this.logger.log({ message: 'Cart item deleted successfully', userId, cartItemId }, context);
             return { success: true };
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -269,7 +268,8 @@ export class CartsService {
     }
 
     async deleteCart(userId: string, cartId: string): Promise<{ success: boolean }> {
-        this.logger.log({ message: 'Deleting cart', userId, cartId }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.deleteCart.name}`;
+        this.logger.log({ message: 'Deleting cart', userId, cartId }, context);
 
         try {
             const cart = await this.cartRepository.findOne({
@@ -277,7 +277,7 @@ export class CartsService {
             });
 
             if (!cart || cart.userId !== userId) {
-                this.logger.warn({ message: 'Cart not found or unauthorized', userId, cartId }, this.context);
+                this.logger.warn({ message: 'Cart not found or unauthorized', userId, cartId }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Cart not found',
@@ -287,7 +287,7 @@ export class CartsService {
 
             await this.cartRepository.delete(cartId);
 
-            this.logger.log({ message: 'Cart deleted successfully', userId, cartId }, this.context);
+            this.logger.log({ message: 'Cart deleted successfully', userId, cartId }, context);
             return { success: true };
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -312,7 +312,8 @@ export class CartsService {
     }
 
     async updateItemQuantity(userId: string, cartItemId: string, quantity: number): Promise<{ success: boolean }> {
-        this.logger.log({ message: 'Updating cart item quantity', userId, cartItemId, quantity }, this.context);
+        const context = `[SERVICE] ${this.constructor.name} : ${this.updateItemQuantity.name}`;
+        this.logger.log({ message: 'Updating cart item quantity', userId, cartItemId, quantity }, context);
 
         try {
             const cartItem = await this.cartItemRepository.findOne({
@@ -321,7 +322,7 @@ export class CartsService {
             });
 
             if (!cartItem || cartItem.cart?.userId !== userId) {
-                this.logger.warn({ message: 'Cart Item not found or unauthorized', userId, cartItemId }, this.context);
+                this.logger.warn({ message: 'Cart Item not found or unauthorized', userId, cartItemId }, context);
                 throw new RpcException({
                     statusCode: HttpStatus.NOT_FOUND,
                     message: 'Cart item not found',
@@ -332,7 +333,7 @@ export class CartsService {
             cartItem.quantity = quantity;
             await this.cartItemRepository.save(cartItem);
 
-            this.logger.log({ message: 'Cart item quantity updated successfully', userId, cartItemId }, this.context);
+            this.logger.log({ message: 'Cart item quantity updated successfully', userId, cartItemId }, context);
             return { success: true };
         } catch (error: unknown) {
             if (error instanceof RpcException) {
@@ -342,11 +343,7 @@ export class CartsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error(
-                { message: 'Failed to remove item from cart', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to remove item from cart', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
