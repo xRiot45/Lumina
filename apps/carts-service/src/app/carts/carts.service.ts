@@ -253,11 +253,7 @@ export class CartsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error(
-                { message: 'Failed to remove item from cart', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to remove item from cart', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -297,11 +293,7 @@ export class CartsService {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorStack = error instanceof Error ? error.stack : undefined;
 
-            this.logger.error(
-                { message: 'Failed to remove item from cart', error: errorMessage },
-                errorStack,
-                this.context,
-            );
+            this.logger.error({ message: 'Failed to remove item from cart', error: errorMessage }, errorStack, context);
 
             throw new RpcException({
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
