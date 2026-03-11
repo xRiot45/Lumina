@@ -11,18 +11,18 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { isMicroserviceError, mapToDto } from '@lumina/shared-utils';
 import { IPaginatedResponse, IUpdateCartItemPayload } from '@lumina/shared-interfaces';
+import { CARTS_COMMAND_PATTERN, MICROSERVICES } from '@lumina/shared-common';
 
 @Injectable()
 export class CartsService {
-    private readonly context = `[GATEWAY] ${CartsService.name}`;
-
     constructor(
-        @Inject('CARTS_SERVICE') private readonly cartsClient: ClientProxy,
+        @Inject(MICROSERVICES.CARTS) private readonly cartsClient: ClientProxy,
         private readonly logger: LoggerService,
     ) {}
 
     async addToCart(userId: string, dto: AddToCartDto): Promise<CartResponseDto> {
-        this.logger.log({ message: 'Initiating cart creation', userId }, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.addToCart.name}`;
+        this.logger.log({ message: 'Initiating cart creation', userId }, context);
 
         try {
             const payload: AddToCartPayloadDto = {
@@ -30,7 +30,7 @@ export class CartsService {
                 data: dto,
             };
 
-            const response = await firstValueFrom(this.cartsClient.send({ cmd: 'add_to_cart' }, payload));
+            const response = await firstValueFrom(this.cartsClient.send(CARTS_COMMAND_PATTERN.ADD_TO_CART, payload));
             return mapToDto(CartResponseDto, response);
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
@@ -73,12 +73,13 @@ export class CartsService {
     }
 
     async getCart(userId: string, query: PaginationDto): Promise<IPaginatedResponse<EnrichedCartItemResponseDto>> {
-        this.logger.log({ message: 'Initiating cart retrieval proxy', userId }, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.getCart.name}`;
+        this.logger.log({ message: 'Initiating cart retrieval proxy', userId }, context);
 
         try {
-            const response = await firstValueFrom(this.cartsClient.send({ cmd: 'get_cart' }, { userId, query }));
-            this.logger.log({ message: 'Cart retrieved successfully from microservice', userId }, this.context);
-
+            const response = await firstValueFrom(
+                this.cartsClient.send(CARTS_COMMAND_PATTERN.GET_CART, { userId, query }),
+            );
             return response;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
@@ -114,11 +115,12 @@ export class CartsService {
     }
 
     async deleteItemFromCart(userId: string, cartItemId: string): Promise<void> {
-        this.logger.log({ message: 'Deleting item from cart', userId, cartItemId }, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.deleteItemFromCart.name}`;
+        this.logger.log({ message: 'Deleting item from cart', userId, cartItemId }, context);
 
         try {
             const response = await firstValueFrom(
-                this.cartsClient.send({ cmd: 'delete_item_from_cart' }, { userId, cartItemId }),
+                this.cartsClient.send(CARTS_COMMAND_PATTERN.DELETE_ITEM_FROM_CART, { userId, cartItemId }),
             );
             return response;
         } catch (error: unknown) {
@@ -162,10 +164,13 @@ export class CartsService {
     }
 
     async deleteCart(userId: string, cartId: string): Promise<void> {
-        this.logger.log({ message: 'Deleting cart', userId, cartId }, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.deleteCart.name}`;
+        this.logger.log({ message: 'Deleting cart', userId, cartId }, context);
 
         try {
-            const response = await firstValueFrom(this.cartsClient.send({ cmd: 'delete_cart' }, { userId, cartId }));
+            const response = await firstValueFrom(
+                this.cartsClient.send(CARTS_COMMAND_PATTERN.DELETE_CART, { userId, cartId }),
+            );
             return response;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
@@ -208,11 +213,14 @@ export class CartsService {
     }
 
     async updateItemQuantity(userId: string, cartItemId: string, quantity: number): Promise<void> {
-        this.logger.log({ message: 'Updating cart item quantity', userId, cartItemId, quantity }, this.context);
+        const context = `[GATEWAY] ${this.constructor.name} : ${this.updateItemQuantity.name}`;
+        this.logger.log({ message: 'Updating cart item quantity', userId, cartItemId, quantity }, context);
 
         try {
             const payload: IUpdateCartItemPayload = { userId, cartItemId, quantity };
-            const response = await firstValueFrom(this.cartsClient.send({ cmd: 'update_item_quantity' }, payload));
+            const response = await firstValueFrom(
+                this.cartsClient.send(CARTS_COMMAND_PATTERN.UPDATE_ITEM_QUANTITY, payload),
+            );
             return response;
         } catch (error: unknown) {
             this.logger.error(`[Gateway] Raw Error from Carts Microservice: ${JSON.stringify(error)}`);
