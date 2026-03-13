@@ -1,3 +1,4 @@
+import { MICROSERVICES } from '@lumina/shared-common';
 import {
     CreateUserAddressDto,
     CreateUserAddressPayloadDto,
@@ -19,7 +20,7 @@ export class UserAddressesService {
     private readonly context = `[GATEWAY] ${UserAddressesService.name}`;
 
     constructor(
-        @Inject('USERS_SERVICE') private readonly usersClient: ClientProxy,
+        @Inject(MICROSERVICES.USERS) private readonly usersClient: ClientProxy,
         private readonly logger: LoggerService,
     ) {}
 
